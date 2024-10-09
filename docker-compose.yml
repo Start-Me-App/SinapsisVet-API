@@ -1,0 +1,43 @@
+version: "3.1"
+# Docker Services
+
+services:
+  # PHP/Apache Service
+
+  sinapsisvet-api-laravel:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    container_name: sinapsisvet-api-laravel
+    restart: always
+    ports:
+      - "8071:80"
+    volumes:
+      - ./app/:/var/www/app
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - sinapsisvet-api-laravel-network
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: laravel_db
+      MYSQL_USER: laravel_user
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3307"
+    networks:
+      - sinapsisvet-api-laravel-network
+
+# Docker Networks
+networks:
+  sinapsisvet-api-laravel-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
