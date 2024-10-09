@@ -1,17 +1,10 @@
-# API Rest PEGA
+# API Rest SinapsisVet
 
-A brief description of what this project does and who it's for
 
-![](https://imagizer.imageshack.com/img924/1024/Qbmr1C.png)
-![](https://imagizer.imageshack.com/img923/9080/GBj112.png)
-
-# PEGA API
-
-Provides services for PEGA applications
+Provides services for SinapsisVet
 
 ## Authors
 
-- [@EmanuelFerreyra]([EmanuelFerreyra (Emanuel Ferreyra) · GitHub](https://github.com/EmanuelFerreyra/))
 - [@ezemanzano]([ezemanzano (Ezequiel Manzano) · GitHub](https://github.com/ezemanzano/))
 
 ## Deployment
