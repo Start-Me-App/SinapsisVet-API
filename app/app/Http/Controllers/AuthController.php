@@ -35,7 +35,56 @@ class Authcontroller extends Controller
      * @param $provider
      * @return JsonResponse
      */
-    public function login(Request $request, $provider)
+    public function register(Request $request)
+    {
+        $params = $request->only('email', 'password','name','role_id','dob');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email',
+            'password' => 'required|min:6',
+            'name' => 'required',
+            'role_id' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        #create user
+
+        $userCreated = User::firstOrCreate(
+            [
+                'email' => $params['email'],
+                'password' => md5($params['password']),
+                'dob' => isset($params['dob']) ? $params['dob'] : null,
+                'name' => $params['name'],
+                'role_id' => 3
+            ],
+            [
+                'email_verified_at' => null
+            ]
+        );
+        
+        #get user data from database    
+        $userCreated = User::with(['role'])->where('email', $params['email'])->first();
+        
+
+        #create jwt token
+        $token = TokenManager::makeToken($userCreated);
+
+
+        return response()->json(['token' => $token], 200);
+        
+    }
+
+     /**
+     * Obtain the user information from Provider.
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function loginSocial(Request $request, $provider)
     {
         $validated = $this->validateProvider($provider);
         if (!is_null($validated)) {
@@ -49,27 +98,32 @@ class Authcontroller extends Controller
         }
         #get data from laravel-firebase-auth
 
-        $verifiedIdToken = $this->auth->verifyIdToken($socialTokenId);
+        /* $verifiedIdToken = $this->auth->verifyIdToken($socialTokenId);
         $user = new User();
         $user->displayName = $verifiedIdToken->claims()->get('name');
         $user->email = $verifiedIdToken->claims()->get('email');
-        $user->uid = $verifiedIdToken->claims()->get('sub');
+        $user->uid = $verifiedIdToken->claims()->get('sub'); */
         
+        #create user
+
         $userCreated = User::firstOrCreate(
             [
-                'email' => $user->email
+                'email' => $user->email,
+                'role_id' => 3,
+                'dob' => isset($params['dob']) ? $params['dob'] : null,
+                'name' => $user->displayName,
+                'role_id' => 3,
+                'uid' => $user->uid
             ],
             [
-                'email_verified_at' => now(),
-                'name' => $user->displayName,
-                'status' => true,
-                'uid' => $user->uid
+                'email_verified_at' => null
             ]
         );
         
-        #get user data from database
-        $userCreated = User::with(['genre','sexualOrientation'])->where('email', $user->email)->first();
-
+        #get user data from database    
+        $userCreated = User::with(['role'])->where('email', $user->email)->first();
+        
+        
         #create jwt token
         $token = TokenManager::makeToken($userCreated);
 
@@ -84,9 +138,44 @@ class Authcontroller extends Controller
      */
     protected function validateProvider($provider)
     {
-        if (!in_array($provider, ['facebook', 'github', 'google'])) {
-            return response()->json(['error' => 'Please login using facebook, github or google'], 422);
+        if (!in_array($provider, ['google'])) {
+            return response()->json(['error' => 'Please login using google'], 422);
         }
+    }
+
+
+    /**
+     * Obtain the user information from Provider.
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function login(Request $request)
+    {
+        $params = $request->only('email', 'password');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email',
+            'password' => 'required|min:6'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+        
+        #get user data from database    
+        $user = User::with(['role'])->where('email', $params['email'])->where('password', md5($params['password']))->first();
+        
+        if(!$user){
+            return response()->json(['error' => 'Usuario o contraseña incorrectos'], 401);
+        }    
+        #create jwt token
+        $token = TokenManager::makeToken($user);
+
+
+        return response()->json(['token' => $token], 200);
+        
     }
 
 
@@ -99,10 +188,12 @@ class Authcontroller extends Controller
     {
         $accessToken = TokenManager::getTokenFromRequest();
         $user = TokenManager::getUserFromToken($accessToken);
+
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['error' => 'La sesion expiró'], 401);
         }
-        $user = User::with(['genre','sexualOrientation'])->find($user->id);
+
+        $user = User::with(['role'])->find($user->id);
         return response()->json($user);
     }
 

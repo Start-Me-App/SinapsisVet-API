@@ -6,26 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-   /**
+    /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('genres', function (Blueprint $table) {
-            $table->id();
+        Schema::create('module', function (Blueprint $table) {
+            $table->bigIncrements('id');
             $table->string('name');
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('genres');
+        Schema::dropIfExists('module');
     }
 };

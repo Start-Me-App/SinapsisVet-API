@@ -20,12 +20,8 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->date('dob')->nullable();
-            $table->integer('age')->nullable();
-            $table->string('profile_photo_path', 2048)->nullable();
-            $table->string('description')->nullable();
-            $table->integer('genre_id')->nullable();
-            $table->integer('sexual_orientation_id')->nullable();
             $table->string('uid')->nullable();
+            $table->string('role_id')->nullable();
         });
     }
 

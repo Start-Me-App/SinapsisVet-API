@@ -8,7 +8,9 @@ use App\Http\Controllers\UserDecisionController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::post('/login/{provider}', [AuthController::class,'login']);
+Route::post('/login', [AuthController::class,'login']);
+Route::post('/register', [AuthController::class,'register']);
+Route::post('/login/{provider}', [AuthController::class,'loginSocial']);
 Route::get('/user', [AuthController::class,'getUser']);
 
 Route::patch('/user', [UserController::class,'update']);

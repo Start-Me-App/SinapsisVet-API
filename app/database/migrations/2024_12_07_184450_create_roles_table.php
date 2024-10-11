@@ -6,22 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
+   /**
      * Run the migrations.
+     *
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('sexual_orientations', function (Blueprint $table) {
-            $table->bigIncrements('id');
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
             $table->string('name');
         });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('sexual_orientations');
+        Schema::dropIfExists('roles');
     }
 };

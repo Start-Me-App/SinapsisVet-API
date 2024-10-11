@@ -33,7 +33,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'uid'
+        'uid',
+        'role_id',
+        'dob',
+
     ];
 
     /**
@@ -44,8 +47,9 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'genre_id',
-        'sexual_orientation_id'
+        'role_id',
+        'created_at',
+        'updated_at'
     ];
 
     /**
@@ -57,8 +61,12 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    } 
 
-    public function providers()
+ /*    public function providers()
     {
         return $this->hasMany(Provider::class,'user_id','id');
     }
@@ -70,8 +78,5 @@ class User extends Authenticatable
         return $this->belongsTo(Genre::class);
     }
 
-    public function sexualOrientation()
-    {
-        return $this->belongsTo(SexualOrientation::class);
-    }
+    */
 }
