@@ -36,6 +36,7 @@ class User extends Authenticatable
         'uid',
         'role_id',
         'dob',
+        'lastname'
 
     ];
 
@@ -65,6 +66,15 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     } 
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            $user->verification_token = bin2hex(random_bytes(32));
+        });
+    }
 
  /*    public function providers()
     {

@@ -37,14 +37,15 @@ class Authcontroller extends Controller
      */
     public function register(Request $request)
     {
-        $params = $request->only('email', 'password','name','role_id','dob');
+        $params = $request->only('email', 'password','name','role_id','dob','lastname');
         
         #verify is the request has all the required fields
         $validator = validator($params, [
             'email' => 'required|email',
             'password' => 'required|min:6',
             'name' => 'required',
-            'role_id' => 'required'
+            'role_id' => 'required',
+            'lastname' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -59,7 +60,8 @@ class Authcontroller extends Controller
                 'password' => md5($params['password']),
                 'dob' => isset($params['dob']) ? $params['dob'] : null,
                 'name' => $params['name'],
-                'role_id' => 3
+                'role_id' => 3,
+                'lastname' => $params['lastname']
             ],
             [
                 'email_verified_at' => null
@@ -68,13 +70,9 @@ class Authcontroller extends Controller
         
         #get user data from database    
         $userCreated = User::with(['role'])->where('email', $params['email'])->first();
-        
-
-        #create jwt token
-        $token = TokenManager::makeToken($userCreated);
 
 
-        return response()->json(['token' => $token], 200);
+        return response()->json(['msg' => 'Usuario creado con éxito'], 200);
         
     }
 
@@ -170,6 +168,11 @@ class Authcontroller extends Controller
         if(!$user){
             return response()->json(['error' => 'Usuario o contraseña incorrectos'], 401);
         }    
+
+        if($user->email_verified_at == null){
+            return response()->json(['error' => 'Email no verificado'], 401);
+        }
+
         #create jwt token
         $token = TokenManager::makeToken($user);
 
@@ -195,6 +198,117 @@ class Authcontroller extends Controller
 
         $user = User::with(['role'])->find($user->id);
         return response()->json($user);
+    }
+   
+   
+   
+    /**
+     * Verify the email.
+     *
+     * @return JsonResponse
+     */
+    public function verifyEmail(Request $request)
+    {
+        $params = $request->only('email', 'token');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email',
+            'token' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        
+             
+        #get user data from database    
+        $user = User::with(['role'])->where('email', $params['email'])->where('verification_token', $params['token'])->first();
+            
+        if(!$user){
+            return response()->json(['error' => 'Token no válido'], 401);
+        }
+
+        if($user->email_verified_at != null){
+            return response()->json(['error' => 'Email ya verificado'], 401);
+        }
+
+        $user->email_verified_at = date('Y-m-d H:i:s');
+        $user->save();
+        
+        return response()->json(['msg' => 'Email verificado con éxito'], 200);
+    }
+
+    /**
+     * Request to reset password
+     *
+     * @return JsonResponse
+     */
+    public function requestResetPassword(Request $request)
+    {
+        $params = $request->only('email');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        
+             
+        #get user data from database    
+        $user = User::with(['role'])->where('email', $params['email'])->first();
+            
+        if(!$user){
+            return response()->json(['error' => 'No se encontró un usuario con ese email'], 401);
+        }
+
+        $user->password_reset_token = bin2hex(random_bytes(32));
+        $user->save();
+
+        #TODO send email
+        
+        return response()->json(['msg' => 'Recupero de contraseña enviado correctamente'], 200);
+    }
+
+
+
+
+    /**
+     * Reset password
+     *
+     * @return JsonResponse
+     */
+    public function resetPassword(Request $request)
+    {
+        $params = $request->only('email','password','token');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email',
+            'password' => 'required|min:6',
+            'token' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        #get user data from database    
+        $user = User::with(['role'])->where('email', $params['email'])->where('password_reset_token',$params['token'])->first();
+            
+        if(!$user){
+            return response()->json(['error' => 'Token inválido'], 401);
+        }
+
+        $user->password = md5($params['password']);
+        $user->save();
+       
+        return response()->json(['msg' => 'Contraseña actualizada correctamente'], 200);
     }
 
 }
