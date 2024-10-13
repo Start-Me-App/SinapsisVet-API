@@ -14,8 +14,10 @@ Route::post('/register/verify', [AuthController::class,'verifyEmail']);
 Route::post('/login/{provider}', [AuthController::class,'loginSocial']);
 Route::post('/requestResetPassword', [AuthController::class,'requestResetPassword']);
 Route::post('/resetPassword', [AuthController::class,'resetPassword']);
-
 Route::get('/user', [AuthController::class,'getUser']);
+
+
+
 
 Route::patch('/user', [UserController::class,'update']);
 Route::delete('/user', [UserController::class,'delete']);

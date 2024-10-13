@@ -28,49 +28,53 @@ class UserController extends Controller
 
         $accessToken = TokenManager::getTokenFromRequest();
         $user        = TokenManager::getUserFromToken($accessToken);
+
+        
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+
+        if(!($user->id == $request->user_id)){
+            if($user->role->id != 1){
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+        }
+
         
-        #   $validated = $this->validateUpdate($request);
         $data = $request->all();        
-        $userData = User::find($user->id);
+        $validator = validator($data, [
+            'name' => 'required',
+            'lastname' => 'required',
+            'user_id' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+        $userData = User::find($data['user_id']);
+
+        if(!$userData){
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        if (isset($data['dob'])) {
+            $data['dob'] = date('Y-m-d', strtotime($data['dob']));
+            $userData->dob = $data['dob'];
+        }
+        $userData->name = $data['name'];
+        $userData->lastname = $data['lastname'];
         
-        
-        $data['dob'] = date('Y-m-d', strtotime($data['dob']));
-        $userData->dob = $data['dob'];
-        $userData->age = $this->calculateAge($data['dob']);
-        $userData->description = $data['description'];
-        $userData->genre_id = $data['genre'];
-        $userData->sexual_orientation_id = $data['sexual_orientation'];
-        $userData->save();
+        if($user->role->id == 1){
+            $userData->role_id = $data['role_id'];
+        }
+       
+        if($userData->save()){
+            return response()->json(['message' => 'Usuario actualizado correctamente', 'data' => User::with(['role'])->find($user->id) ], 200);
+        }
 
-        $users = User::with(['genre','sexualOrientation'])->find($user->id);
+        return response()->json(['error' => 'Error al actualizar el usuario'], 500);
 
-
-        return response()->json($users);
     }
-
-    private function calculateAge($dob)
-    {
-        $dob = date('Y-m-d', strtotime($dob));
-        $dobObject = new \DateTime($dob);
-        $nowObject = new \DateTime();
-        $diff = $dobObject->diff($nowObject);
-        return $diff->y;
-    }
-
-    private function validateUpdate(Request $request)
-    {
-        $rules = [
-            'dob' => 'required|date',
-            'description' => 'string',
-            'genre' => 'required|string',
-            'sexual_orientation' => 'required|string'
-        ];
-        $this->validate($request, $rules);
-    }
-
 
      /**
      * delete user 
@@ -85,14 +89,30 @@ class UserController extends Controller
         $user        = TokenManager::getUserFromToken($accessToken);
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
+        }   
+        
+        if(!$user->role->id != 1){
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
+        $data = $request->all();
         
-       
-        $userObject = User::find($user->id);
-        
-        $userObject->delete();
+        $validator = validator($data, [
+            'user_id' => 'required'
+        ]);
 
-        return response()->json($userObject);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+        $userObject = User::find($data['user_id']);
+        
+        if(!$userObject){
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        if($userObject->delete()){
+            return response()->json(['message' => 'Usuario eliminado correctamente'], 200);
+        }   
+        return response()->json(['error' => 'Error al eliminar el usuario'], 500);
     }
 
 }
