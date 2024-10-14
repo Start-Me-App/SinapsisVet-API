@@ -50,7 +50,11 @@ class User extends Authenticatable
         'remember_token',
         'role_id',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'verification_token',
+        'password_reset_token',
+        'email_verified_at',
+        'uid'
     ];
 
     /**
@@ -75,6 +79,13 @@ class User extends Authenticatable
             $user->verification_token = bin2hex(random_bytes(32));
         });
     }
+
+    public function moduleByRole()
+    {
+        return $this->hasMany(ModuleByRole::class,'role_id','role_id');
+    }
+
+
 
  /*    public function providers()
     {

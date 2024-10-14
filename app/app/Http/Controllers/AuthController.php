@@ -196,7 +196,7 @@ class Authcontroller extends Controller
             return response()->json(['error' => 'La sesion expiró'], 401);
         }
 
-        $user = User::with(['role'])->find($user->id);
+        $user = User::with(['role','moduleByRole.module'])->find($user->id);
         return response()->json($user);
     }
    
