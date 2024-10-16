@@ -5,6 +5,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDecisionController;
+use App\Http\Controllers\{CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
 
@@ -24,3 +25,59 @@ Route::patch('/user', [UserController::class,'update']);
 Route::delete('/user/{user_id}', [UserController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 Route::get('/user/list', [UserController::class,'listUsers'])->middleware(ControlAccessMiddleware::class.':admin');
 
+
+#create route group for courses
+Route::group(['prefix' => 'courses'], function () {
+    Route::post('/', [CoursesController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+    Route::patch('/{course_id}', [CoursesController::class,'update']);
+    Route::delete('/{course_id}', [CoursesController::class,'delete']);
+    Route::get('/list', [CoursesController::class,'listAllCourses']);
+
+    #TODO
+    Route::get('/{course_id}', [CoursesController::class,'getCourse']);
+    Route::get('/{course_id}/students', [CoursesController::class,'getStudents']);
+    Route::post('/{course_id}/students', [CoursesController::class,'addStudent']);
+    Route::delete('/{course_id}/students/{student_id}', [CoursesController::class,'removeStudent']);
+});
+
+
+
+#create route group for lessons
+Route::group(['prefix' => 'lessons'], function () {
+    Route::post('/', [LessonsController::class,'create']);
+    Route::patch('/{lesson_id}', [LessonsController::class,'update']);
+    Route::delete('/{lesson_id}', [LessonsController::class,'delete']);
+
+    #TODO
+    Route::get('/{lesson_id}', [LessonsController::class,'getLesson']);
+});
+
+#create route group for workshops
+Route::group(['prefix' => 'workshops'], function () {
+    Route::post('/', [WorkshopsController::class,'create']);
+    Route::patch('/{workshop_id}', [WorkshopsController::class,'update']);
+    Route::delete('/{workshop_id}', [WorkshopsController::class,'delete']);
+
+    #TODO
+    Route::get('/{workshop_id}', [WorkshopsController::class,'getWorkshop']);
+});
+
+#create route group for exams
+Route::group(['prefix' => 'exams'], function () {
+    Route::post('/', [ExamsController::class,'create']);
+    Route::patch('/{exam_id}', [ExamsController::class,'update']);
+    Route::delete('/{exam_id}', [ExamsController::class,'delete']);
+
+    #TODO
+    Route::get('/{exam_id}', [ExamsController::class,'getExam']);
+});
+
+#create route group for materials
+Route::group(['prefix' => 'materials'], function () {
+    Route::post('/', [MaterialsController::class,'create']);
+    Route::patch('/{material_id}', [MaterialsController::class,'update']);
+    Route::delete('/{material_id}', [MaterialsController::class,'delete']);
+
+    #TODO
+    Route::get('/{material_id}', [MaterialsController::class,'getMaterial']);
+});
