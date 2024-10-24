@@ -36,7 +36,12 @@ class User extends Authenticatable
         'uid',
         'role_id',
         'dob',
-        'lastname'
+        'lastname',
+        'telephone',
+        'area_code',
+        'tyc',
+        'nationality_id',
+        'sex'
 
     ];
 
@@ -54,7 +59,10 @@ class User extends Authenticatable
         'verification_token',
         'password_reset_token',
         'email_verified_at',
-        'uid'
+        'uid',
+        'nationality_id',
+        'tyc',
+        'active'
     ];
 
     /**
@@ -84,6 +92,25 @@ class User extends Authenticatable
     {
         return $this->hasMany(ModuleByRole::class,'role_id','role_id');
     }
+
+
+    public function nationality()
+    {
+        return $this->belongsTo(Countries::class,'nationality_id','id');
+    } 
+
+
+    protected $appends = ['full_phone'];
+
+    public function getFullPhoneAttribute()
+    {
+        return '+'.$this->area_code . $this->telephone;
+    }
+
+
+    
+
+
 
 
 

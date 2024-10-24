@@ -39,4 +39,9 @@ class Lessons extends Model
         return $this->hasOne(Courses::class, 'id', 'course_id');
     }
 
+    public function materials()
+    {
+        return $this->hasMany(Materials::class, 'lesson_id', 'id');
+    }
+
 }

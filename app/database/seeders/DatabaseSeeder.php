@@ -34,9 +34,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         DB::table('courses')->insert([
-            ['name' => 'Curso 1', 'description' => 'Curso 1', 'active' => 1,'price' => 100,'profesor_id' => 2, 'category_id' => 1],
-            ['name' => 'Curso 2', 'description' => 'Curso 2', 'active' => 1,'price' => 100,'profesor_id' => 2, 'category_id' => 2],
-            ['name' => 'Curso 3', 'description' => 'Curso 3', 'active' => 1,'price' => 100,'profesor_id' => 2,'category_id' => 1]]);
+            ['title' => 'Curso 1', 'description' => 'Curso 1', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'profesor_id' => 2, 'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01'],
+            ['title' => 'Curso 2', 'description' => 'Curso 2', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'profesor_id' => 2, 'category_id' => 2, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01'],
+            ['title' => 'Curso 3', 'description' => 'Curso 3', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'profesor_id' => 2,'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01']]);
 
         DB::table('lessons')->insert([
             ['name' => 'Leccion 1', 'description' => 'Leccion 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123'],

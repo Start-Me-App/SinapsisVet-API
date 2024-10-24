@@ -36,7 +36,7 @@ class UserController extends Controller
 
         if(!($user->id == $request->user_id)){
             if($user->role->id != 1){
-                return response()->json(['error' => 'Unauthorized'], 401);
+                return response()->json(['error' => 'Unauthorizeda'], 401);
             }
         }
 
@@ -45,7 +45,11 @@ class UserController extends Controller
         $validator = validator($data, [
             'name' => 'required',
             'lastname' => 'required',
-            'user_id' => 'required'
+            'user_id' => 'required',
+            'telephone' => 'required',
+            'area_code' => 'required',
+            'nationality_id' => 'required',
+            'sex' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +67,12 @@ class UserController extends Controller
         }
         $userData->name = $data['name'];
         $userData->lastname = $data['lastname'];
+        $userData->telephone = $data['telephone'];
+        $userData->area_code = $data['area_code'];
+        $userData->nationality_id = $data['nationality_id'];   
+        $userData->sex = $data['sex']; 
+
+
         
         if($user->role->id == 1){
             $userData->role_id = $data['role_id'];
@@ -73,7 +83,7 @@ class UserController extends Controller
         }
 
         if($userData->save()){
-            return response()->json(['message' => 'Usuario actualizado correctamente', 'data' => User::with(['role'])->find($user->id) ], 200);
+            return response()->json(['message' => 'Usuario actualizado correctamente', 'data' => User::with(['role','nationality'])->find($data['user_id']) ], 200);
         }
 
         return response()->json(['error' => 'Error al actualizar el usuario'], 500);

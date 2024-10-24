@@ -5,7 +5,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDecisionController;
-use App\Http\Controllers\{CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController};
+use App\Http\Controllers\CountriesController;
+use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
 
@@ -19,12 +20,13 @@ Route::post('/resetPassword', [AuthController::class,'resetPassword']);
 Route::get('/user', [AuthController::class,'getUser'])->middleware(ControlAccessMiddleware::class);
 
 
-
-
 Route::patch('/user', [UserController::class,'update']);
 Route::delete('/user/{user_id}', [UserController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 Route::get('/user/list', [UserController::class,'listUsers'])->middleware(ControlAccessMiddleware::class.':admin');
 
+
+Route::get('/countries', [CountriesController::class,'getAll']);
+Route::get('/categories', [CategoriesController::class,'getAll']);
 
 #create route group for courses
 Route::group(['prefix' => 'courses'], function () {
@@ -33,8 +35,11 @@ Route::group(['prefix' => 'courses'], function () {
     Route::delete('/{course_id}', [CoursesController::class,'delete']);
     Route::get('/list', [CoursesController::class,'listAllCourses']);
 
-    #TODO
     Route::get('/{course_id}', [CoursesController::class,'getCourse']);
+    Route::get('/{course_id}/lessons', [CoursesController::class,'getLessonsByCourse']);
+    Route::get('/{course_id}/exams', [CoursesController::class,'getExamsByCourse']);
+    Route::get('/{course_id}/workshops', [CoursesController::class,'getWorkshopsByCourse']);
+    #TODO
     Route::get('/{course_id}/students', [CoursesController::class,'getStudents']);
     Route::post('/{course_id}/students', [CoursesController::class,'addStudent']);
     Route::delete('/{course_id}/students/{student_id}', [CoursesController::class,'removeStudent']);

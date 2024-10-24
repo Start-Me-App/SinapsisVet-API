@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use App\Models\User;
-use Kreait\Firebase\Contract\Auth as FirebaseAuth;
+use Laravel\Socialite\Facades\Socialite;
 use App\Support\TokenManager;
 
 class Authcontroller extends Controller
@@ -24,9 +24,8 @@ class Authcontroller extends Controller
      *
      * @return void
      */
-    public function __construct(FirebaseAuth $auth)
+    public function __construct()
     {
-        $this->auth =app("firebase.auth");
     }
 
     /**
@@ -37,22 +36,34 @@ class Authcontroller extends Controller
      */
     public function register(Request $request)
     {
-        $params = $request->only('email', 'password','name','role_id','dob','lastname');
+        $params = $request->only('email', 'password','name','role_id','dob','lastname','telephone','area_code','tyc','nationality_id','gender');
         
         #verify is the request has all the required fields
         $validator = validator($params, [
             'email' => 'required|email',
             'password' => 'required|min:6',
             'name' => 'required',
-            'role_id' => 'required',
             'lastname' => 'required',
+            'telephone' => 'required',
+            'area_code' => 'required',
+            'tyc' => 'required',
+            'nationality_id' => 'required',
+            'gender' => 'required'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        #create user
+        #verify if the email is already in use
+        $user = User::where('email', $params['email'])->first();
+        if($user){
+            return response()->json(['error' => 'Email ya registrado'], 422);
+        }
+
+        if($params['tyc'] != 1){
+            return response()->json(['error' => 'Debe aceptar los términos y condiciones'], 422);
+        }
 
         $userCreated = User::firstOrCreate(
             [
@@ -61,10 +72,16 @@ class Authcontroller extends Controller
                 'dob' => isset($params['dob']) ? $params['dob'] : null,
                 'name' => $params['name'],
                 'role_id' => 3,
-                'lastname' => $params['lastname']
+                'lastname' => $params['lastname'],
+                'telephone' => $params['telephone'],
+                'area_code' => $params['area_code'],
+                'tyc' => $params['tyc'],
+                'nationality_id' => $params['nationality_id'],
+                'sex'   => $params['gender']
             ],
             [
-                'email_verified_at' => null
+                'email_verified_at' => null,
+                'created_at' => date('Y-m-d H:i:s')
             ]
         );
         
@@ -96,12 +113,23 @@ class Authcontroller extends Controller
         }
         #get data from laravel-firebase-auth
 
-        /* $verifiedIdToken = $this->auth->verifyIdToken($socialTokenId);
+        try {
+            $providerUser = Socialite::driver('google')->userFromToken($socialTokenId);
+        } catch (Exception $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        var_dump($providerUser);exit;
+
+       
         $user = new User();
-        $user->displayName = $verifiedIdToken->claims()->get('name');
-        $user->email = $verifiedIdToken->claims()->get('email');
-        $user->uid = $verifiedIdToken->claims()->get('sub'); */
-        
+        $user->displayName = $verifiedIdToken->getName();;
+        $user->email = $verifiedIdToken->getEmail();
+        $user->uid = $verifiedIdToken->getId();
+        var_dump($user);exit;
+
         #create user
 
         $userCreated = User::firstOrCreate(
@@ -196,7 +224,7 @@ class Authcontroller extends Controller
             return response()->json(['error' => 'La sesion expiró'], 401);
         }
 
-        $user = User::with(['role','moduleByRole.module'])->find($user->id);
+        $user = User::with(['role','moduleByRole.module','nationality'])->find($user->id);
         return response()->json($user);
     }
    

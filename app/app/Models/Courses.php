@@ -27,11 +27,14 @@ class Courses extends Model
      */
     protected $fillable = [
         'profesor_id',
-        'name',
+        'title',
         'price',
         'description',
         'active',
-        'category_id'
+        'category_id',
+        'photo_url',
+        'starting_date',
+        'inscription_date'
 
     ];
 
@@ -56,4 +59,19 @@ class Courses extends Model
         return $this->hasOne(Categories::class, 'id', 'category_id');
     }
 
+    public function lessons()
+    {
+        return $this->hasMany(Lessons::class, 'course_id', 'id');
+    }
+
+
+    public function exams()
+    {
+        return $this->hasMany(Exams::class, 'course_id', 'id');
+    }
+
+    public function workshops()
+    {
+        return $this->hasMany(Workshops::class, 'course_id', 'id');
+    }
 }
