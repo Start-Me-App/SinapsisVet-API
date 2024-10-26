@@ -125,6 +125,26 @@ class WorkshopsController extends Controller
         }   
         return response()->json(['error' => 'Error al eliminar la Taller'], 500);
     }
+     
+    
+    
+    /**
+     * get workshop 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getWorkshop(Request $request,$workshop_id)
+    {
+        $data = $request->all();
+        $workshop = Workshops::find($workshop_id);   
+        
+        if(!$workshop){
+            return response()->json(['error' => 'Taller no encontrada'], 404);
+        }
+       
+        return response()->json(['data' => $workshop ], 200);
+    }
 
 
 }

@@ -24,7 +24,7 @@ class CoursesController extends Controller
      */
     public function create(Request $request)
     {
-        
+        #TODO -> cambiar photo_url por photo y recibe un file
         $data = $request->all();        
         $validator = validator($data, [
             'title' => 'required',
@@ -187,7 +187,7 @@ class CoursesController extends Controller
     public function getCourse(Request $request,$course_id)
     {   
         
-        $list = Courses::with(['profesor','category','lessons.materials','workshops','exams'])->find($course_id);
+        $list = Courses::with(['profesor','category','lessons.materials','workshops','exams','inscriptions.student'])->find($course_id);
       
         return response()->json(['data' => $list], 200);
     }
@@ -234,6 +234,109 @@ class CoursesController extends Controller
       
         return response()->json(['data' => $list], 200);
     }
+
+    /**
+     * Agregar un estudiante a un curso 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function addStudent(Request $request,$course_id)
+    {   
+        $data = $request->all();
+        #validate if course already exists
+        $course = Courses::where('id',$course_id)->first();
+        if(!$course){
+            return response()->json(['error' => 'El curso no existe'], 409);
+        }
+
+        #validate if student already exists
+        $student = User::where('id',$data['user_id'])->where('role_id',3)->first();
+        if(!$student){
+            return response()->json(['error' => 'Estudiante no encontrado'], 409);
+        }
+
+        #validate if student is already inscripted
+        $inscription = DB::table('inscriptions')->where('user_id',$data['user_id'])->where('course_id',$course_id)->first();
+        
+        if($inscription){
+            return response()->json(['error' => 'Estudiante ya inscripto'], 409);
+        }
+
+        $inscription = DB::table('inscriptions')->insert(
+            ['user_id' => $data['user_id'], 'course_id' => $course_id,'with_workshop' => $data['with_workshop']]
+        );
+
+        if($inscription){
+            return response()->json(['message' => 'Estudiante inscripto correctamente','data' => $inscription], 200);
+        }
+
+        return response()->json(['error' => 'Error al inscribir al estudiante'], 500);
+    }
+   
+   
+   
+    /**
+     * Obtener los estudiantes de un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getStudents(Request $request,$course_id)
+    {   
+       
+        $course = Courses::where('id',$course_id)->first();
+        if(!$course){
+            return response()->json(['error' => 'El curso no existe'], 409);
+        }
+
+        #get students from inscriptions
+
+        $students = DB::table('inscriptions')->where('course_id',$course_id)->get();
+        $studentsList = [];
+        foreach($students as $student){
+            $studentData = User::where('id',$student->user_id)->first();
+            $studentsList[] = $studentData;
+        }
+
+        return response()->json(['data' => $studentsList], 200);
+        
+    }
+    
+ 
+    /**
+     * Elimina a un estudiante de un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function removeStudent(Request $request,$course_id,$student_id)
+    {   
+        $course = Courses::where('id',$course_id)->first();
+        if(!$course){
+            return response()->json(['error' => 'El curso no existe'], 409);
+        }
+
+        $student = User::where('id',$student_id)->where('role_id',3)->first();
+        if(!$student){
+            return response()->json(['error' => 'Estudiante no encontrado'], 409);
+        }
+
+        $inscription = DB::table('inscriptions')->where('user_id',$student_id)->where('course_id',$course_id)->first();
+        
+        if(!$inscription){
+            return response()->json(['error' => 'Estudiante no inscripto'], 409);
+        }
+
+        $inscription = DB::table('inscriptions')->where('user_id',$student_id)->where('course_id',$course_id)->delete();
+        
+        if($inscription){
+            return response()->json(['message' => 'Estudiante eliminado correctamente'], 200);
+        }
+
+        return response()->json(['error' => 'Error al eliminar al estudiante'], 500);
+    }
+    
 
 
     

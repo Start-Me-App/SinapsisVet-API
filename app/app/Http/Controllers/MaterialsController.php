@@ -130,4 +130,23 @@ class MaterialsController extends Controller
     }
 
 
+     /**
+     * get material 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getMaterial(Request $request,$workshop_id)
+    {
+        $data = $request->all();
+        $material = Materials::find($workshop_id);   
+        
+        if(!$material){
+            return response()->json(['error' => 'Material no encontrado'], 404);
+        }
+
+        return response()->json(['data' => $material], 200);
+    }
+
+
 }

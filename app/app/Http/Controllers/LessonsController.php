@@ -127,4 +127,23 @@ class LessonsController extends Controller
     }
 
 
+     /**
+     * get lesson 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getLesson(Request $request,$lesson_id)
+    {
+        $data = $request->all();
+        $lesson = Lessons::find($lesson_id);           
+        
+        if(!$lesson){
+            return response()->json(['error' => 'Leccion no encontrada'], 404);
+        }
+        return response()->json(['data' => $lesson ], 200);
+
+    }
+
+
 }

@@ -74,4 +74,9 @@ class Courses extends Model
     {
         return $this->hasMany(Workshops::class, 'course_id', 'id');
     }
+
+    public function inscriptions()
+    {
+        return $this->hasMany(Inscriptions::class, 'course_id', 'id');
+    }
 }
