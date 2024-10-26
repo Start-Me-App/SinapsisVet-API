@@ -55,9 +55,9 @@ class DatabaseSeeder extends Seeder
 
 
             DB::table('exams')->insert([
-                ['name' => 'exa 1', 'active' => 1, 'course_id' => 1, 'lesson_id' => 1],
-                ['name' => 'exa 2', 'active' => 1, 'course_id' => null, 'lesson_id' => 1],
-                ['name' => 'eax 2-1', 'active' => 1, 'course_id' => 2, 'lesson_id' => null]]);
+                ['name' => 'exa 1', 'active' => 1, 'course_id' => 1,],
+                ['name' => 'exa 2', 'active' => 1, 'course_id' => 1,],
+                ['name' => 'eax 2-1', 'active' => 1, 'course_id' => 2,]]);
 
             DB::table('courses_category')->insert([
                 ['name' => 'Categoria 1'],

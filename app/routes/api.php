@@ -39,7 +39,7 @@ Route::group(['prefix' => 'courses'], function () {
     Route::get('/{course_id}/lessons', [CoursesController::class,'getLessonsByCourse']);
     Route::get('/{course_id}/exams', [CoursesController::class,'getExamsByCourse']);
     Route::get('/{course_id}/workshops', [CoursesController::class,'getWorkshopsByCourse']);
-    #TODO
+  
     Route::get('/{course_id}/students', [CoursesController::class,'getStudents']);
     Route::post('/{course_id}/students', [CoursesController::class,'addStudent']);
     Route::delete('/{course_id}/students/{student_id}', [CoursesController::class,'removeStudent']);
@@ -53,7 +53,6 @@ Route::group(['prefix' => 'lessons'], function () {
     Route::patch('/{lesson_id}', [LessonsController::class,'update']);
     Route::delete('/{lesson_id}', [LessonsController::class,'delete']);
 
-    #TODO
     Route::get('/{lesson_id}', [LessonsController::class,'getLesson']);
 });
 
@@ -63,7 +62,6 @@ Route::group(['prefix' => 'workshops'], function () {
     Route::patch('/{workshop_id}', [WorkshopsController::class,'update']);
     Route::delete('/{workshop_id}', [WorkshopsController::class,'delete']);
 
-    #TODO
     Route::get('/{workshop_id}', [WorkshopsController::class,'getWorkshop']);
 });
 
@@ -83,6 +81,5 @@ Route::group(['prefix' => 'materials'], function () {
     Route::patch('/{material_id}', [MaterialsController::class,'update']);
     Route::delete('/{material_id}', [MaterialsController::class,'delete']);
 
-    #TODO
     Route::get('/{material_id}', [MaterialsController::class,'getMaterial']);
 });
