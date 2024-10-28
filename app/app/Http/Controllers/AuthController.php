@@ -9,6 +9,8 @@ use App\Models\User;
 use Laravel\Socialite\Facades\Socialite;
 use App\Support\TokenManager;
 
+use Kreait\Firebase\Contract\Auth as FirebaseAuth;
+
 class Authcontroller extends Controller
 {
 
@@ -24,8 +26,9 @@ class Authcontroller extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(FirebaseAuth $auth)
     {
+        $this->auth =app("firebase.auth");
     }
 
     /**
@@ -106,43 +109,49 @@ class Authcontroller extends Controller
             return $validated;
         }
        
-        $socialTokenId = $request->input("token-id");
+        $accessToken = $request->input("token-id");
         
-        if (empty($socialTokenId)) {
+        if (empty($accessToken)) {
             return response()->json(['error' => 'Token is required'], 401);
         }
-        #get data from laravel-firebase-auth
-
         try {
-            $providerUser = Socialite::driver('google')->userFromToken($socialTokenId);
+     
+            $verifiedIdToken = $this->auth->verifyIdToken($accessToken);
+
+
+            $user = new User();
+            $user->name = $verifiedIdToken->claims()->get('name');
+            $user->email = $verifiedIdToken->claims()->get('email');
+            $user->uid = $verifiedIdToken->claims()->get('sub');
         } catch (Exception $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
             ]);
         }
 
-        var_dump($providerUser);exit;
 
-       
-        $user = new User();
-        $user->displayName = $verifiedIdToken->getName();;
-        $user->email = $verifiedIdToken->getEmail();
-        $user->uid = $verifiedIdToken->getId();
-        var_dump($user);exit;
 
-        #create user
+        #verify if the email is already in use
+        $check_user = User::where('email', $user->email)->first();
+
+        if($check_user){
+            $token = TokenManager::makeToken($check_user);
+            return response()->json(['token' => $token], 200);
+        }
 
         $userCreated = User::firstOrCreate(
             [
                 'email' => $user->email,
                 'role_id' => 3,
-                'dob' => isset($params['dob']) ? $params['dob'] : null,
-                'name' => $user->displayName,
+                'dob' => null,
+                'name' => $user->name,
+                'lastname' => $user->name,
                 'role_id' => 3,
-                'uid' => $user->uid
+                'uid' => $user->uid,
+                'password' => md5($user->uid),
             ],
             [
-                'email_verified_at' => null
+                'email_verified_at' => date('Y-m-d H:i:s'),
             ]
         );
         
