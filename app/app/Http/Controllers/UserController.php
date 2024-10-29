@@ -36,7 +36,7 @@ class UserController extends Controller
 
         if(!($user->id == $request->user_id)){
             if($user->role->id != 1){
-                return response()->json(['error' => 'Unauthorizeda'], 401);
+                return response()->json(['error' => 'Unauthorized'], 401);
             }
         }
 
@@ -49,7 +49,7 @@ class UserController extends Controller
             'telephone' => 'required',
             'area_code' => 'required',
             'nationality_id' => 'required',
-            'sex' => 'required'
+            'gender' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -70,7 +70,7 @@ class UserController extends Controller
         $userData->telephone = $data['telephone'];
         $userData->area_code = $data['area_code'];
         $userData->nationality_id = $data['nationality_id'];   
-        $userData->sex = $data['sex']; 
+        $userData->gender = $data['gender']; 
 
 
         

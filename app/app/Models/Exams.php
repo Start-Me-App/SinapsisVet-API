@@ -42,4 +42,10 @@ class Exams extends Model
         return $this->hasOne(Lessons::class, 'id', 'lesson_id');
     }
 
+    public function questions()
+    {
+        return $this->hasMany(Questions::class, 'exam_id', 'id');
+    }
+    
+
 }

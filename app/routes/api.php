@@ -71,8 +71,18 @@ Route::group(['prefix' => 'exams'], function () {
     Route::patch('/{exam_id}', [ExamsController::class,'update']);
     Route::delete('/{exam_id}', [ExamsController::class,'delete']);
 
-    #TODO
+
+    Route::post('/{exam_id}/questions', [ExamsController::class,'addQuestion']);
+    Route::get('/{exam_id}/questions', [ExamsController::class,'getQuestions']);
+
     Route::get('/{exam_id}', [ExamsController::class,'getExam']);
+    #TODO
+    #PATCH de preguntas
+    #DELETE de preguntas
+
+    #Obtener resultados ?
+    #Obtener resultados de un usuario ?
+    #Obtener resultados de un examen ?
 });
 
 #create route group for materials

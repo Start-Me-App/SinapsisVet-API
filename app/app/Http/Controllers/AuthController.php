@@ -149,6 +149,7 @@ class Authcontroller extends Controller
                 'role_id' => 3,
                 'uid' => $user->uid,
                 'password' => md5($user->uid),
+                'tyc' => 1
             ],
             [
                 'email_verified_at' => date('Y-m-d H:i:s'),

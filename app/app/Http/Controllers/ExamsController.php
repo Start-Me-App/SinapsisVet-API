@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Exams, User, Lessons};
+use App\Models\{Courses, Exams, Questions,Answers};
 
 use Illuminate\Support\Facades\DB;
 
@@ -142,6 +142,110 @@ class ExamsController extends Controller
         }   
         return response()->json(['error' => 'Error al eliminar el examen'], 500);
     }
+
+
+     /**
+     * get exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getExam(Request $request,$exam_id)
+    {
+        $data = $request->all();
+        
+        $exam = Exams::with('questions.answers')->where('id',$exam_id)->first();
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+       
+        return response()->json(['data' => $exam], 500);
+    }
+
+
+    
+     /**
+     * add questions to exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function addQuestion(Request $request,$exam_id)
+    {
+        $data = $request->all();
+        $exam = Exams::find($exam_id);   
+        
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+       
+        foreach ($data as $question) {
+            
+           if(!isset($question['question_title'])){
+                return response()->json(['error' => 'El titulo de la pregunta no puede estar vacío.', 'data' => $question], 422);
+            }
+            $correct = false;
+            foreach ($question['answers'] as $answer) {
+                if(!isset($answer['answer_title'])){
+                    return response()->json(['error' => 'El titulo de la respuesta no puede estar vacío.', 'data' => $question], 422);
+                }
+
+                if($answer['correct'] == 1 ){
+                    if($correct){
+                        return response()->json(['error' => 'Solo puede haber una respuesta correcta.', 'data' => $question], 422);
+                    }
+                    $correct = true;
+                }                
+            }
+
+            if(!$correct){
+                return response()->json(['error' => 'Debe haber al menos una respuesta correcta.', 'data' => $question], 422);
+            }
+
+
+        }
+        foreach ($data as $question) {
+            
+            $question_create = Questions::create([
+                'exam_id' => $exam_id,
+                'question_title' => $question['question_title']
+            ]);
+
+
+            foreach ($question['answers'] as $answer) {
+                Answers::create([
+                    'question_id' => $question_create->id,
+                    'answer_title' => $answer['answer_title'],
+                    'is_correct' => $answer['correct']
+                ]);
+            }
+
+        }
+
+        return response()->json(['message' => 'Preguntas añadidas correctamente'], 200);
+    }
+
+
+      /**
+     * get questions of exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getQuestions(Request $request,$exam_id)
+    {
+        $data = $request->all();
+        $exam = Exams::find($exam_id);   
+        
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+       
+        $questions = Questions::with('answers')->where('exam_id',$exam_id)->get();
+        return response()->json(['data' => $questions], 200);
+    }
+
+
 
 
 }

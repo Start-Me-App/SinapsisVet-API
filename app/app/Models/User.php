@@ -100,13 +100,21 @@ class User extends Authenticatable
     } 
 
 
-    protected $appends = ['full_phone'];
+    protected $appends = ['full_phone','register_completed'];
 
     public function getFullPhoneAttribute()
     {
         return '+'.$this->area_code . $this->telephone;
     }
 
+
+    public function getRegisterCompletedAttribute()
+    {
+       if($this->nationality_id != null ){
+           return true;
+       }
+        return false;
+    }
 
     
 
