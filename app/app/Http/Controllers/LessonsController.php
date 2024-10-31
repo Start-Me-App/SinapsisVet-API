@@ -7,11 +7,12 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, User, Lessons};
+use App\Models\{Courses, User, Lessons,Materials};
 
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
+use App\Support\UploadServer;
 
 class LessonsController extends Controller
 {   
@@ -26,6 +27,7 @@ class LessonsController extends Controller
     {
 
         $data = $request->all();    
+      
         $validator = validator($data, [
             'course_id' => 'required',
             'name' => 'required',
@@ -38,7 +40,7 @@ class LessonsController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-
+     
         #validate if course exists
         $course = Courses::where('id',$data['course_id'])->first();
         
@@ -55,6 +57,29 @@ class LessonsController extends Controller
 
 
         if($lesson->save()){
+
+                #get materials from request
+                // Retrieve all files from 'materials' input field
+                $materials = $request->file('materials');
+               
+                if ($materials && is_array($materials)) {
+                    foreach ($materials as $file) {
+                    
+                        $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
+
+                        $material = new Materials();
+                        $material->lesson_id = $lesson->id;
+                        $material->file_path = $path;
+                        $material->name = $file->getClientOriginalName();
+                        $material->active = 1;
+                        $material->save();
+
+                    }
+                }
+            
+
+            $lesson = Lessons::with('materials')->where('id',$lesson->id)->first();
+
             return response()->json(['message' => 'Leccion creada correctamente', 'data' => $lesson ], 200);
         }
 

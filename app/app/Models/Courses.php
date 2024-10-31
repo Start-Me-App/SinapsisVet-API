@@ -47,6 +47,14 @@ class Courses extends Model
     protected $hidden = [
         'category_id'
     ];
+
+
+    protected $appends = ['photo_url'];
+
+    public function getPhotoUrlAttribute()
+    {
+        return env('STATIC_URL') . $this->attributes['photo_url'];
+    }
    
 
     public function profesor()

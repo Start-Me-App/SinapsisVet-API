@@ -7,11 +7,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Exams, Questions,Answers};
+use App\Models\{Courses, Exams, Questions,Answers,Results};
 
-use Illuminate\Support\Facades\DB;
-
-use App\Support\TokenManager;
 
 class ExamsController extends Controller
 {   
@@ -243,6 +240,27 @@ class ExamsController extends Controller
        
         $questions = Questions::with('answers')->where('exam_id',$exam_id)->get();
         return response()->json(['data' => $questions], 200);
+    }
+  
+  
+    /**
+     * get results of exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getResults(Request $request,$exam_id)
+    {
+        $data = $request->all();
+        $exam = Exams::find($exam_id);   
+        
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+       
+        $results = Results::with(['user'])->where('exam_id',$exam_id)->get();
+
+        return response()->json(['data' => $results], 200);
     }
 
 

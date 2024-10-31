@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use LDAP\Result;
 
 class Exams extends Model
 {
@@ -45,6 +46,11 @@ class Exams extends Model
     public function questions()
     {
         return $this->hasMany(Questions::class, 'exam_id', 'id');
+    }
+
+    public function results()
+    {
+        return $this->hasMany(Results::class, 'exam_id', 'id');
     }
     
 

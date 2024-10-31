@@ -32,6 +32,15 @@ class Materials extends Model
         'active'
     ];
    
+
+    
+    protected $appends = ['file_path_url'];
+
+    public function getFilePathUrlAttribute()
+    {
+        return env('STATIC_URL') . $this->attributes['file_path'];
+    }
+   
     
     public function lesson()
     {

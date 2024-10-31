@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\UploadServer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -34,7 +35,7 @@ class CoursesController extends Controller
             'price_usd' => 'required',
             'active' => 'required|integer',
             'category_id' => 'required',
-            'photo_url' => 'required',
+            'photo_file' => 'required',
             'starting_date' => 'required',
             'inscription_date' => 'required'
         ]);
@@ -57,7 +58,15 @@ class CoursesController extends Controller
         if($course){
             return response()->json(['error' => 'Curso ya existe'], 409);
         }
-      
+
+
+        $upload = UploadServer::uploadImage($data['photo_file'],'images');
+        
+        if(!$upload){
+            return response()->json(['error' => 'Error al subir la imagen'], 500);
+        } 
+
+ 
         $course = new Courses();
         $course->title = $data['title'];
         $course->description = $data['description'];
@@ -66,7 +75,7 @@ class CoursesController extends Controller
         $course->price_usd = $data['price_usd'];
         $course->active = $data['active'];
         $course->category_id = $data['category_id'];
-        $course->photo_url = $data['photo_url'];
+        $course->photo_url = $upload;
         $course->starting_date = $data['starting_date'];
         $course->inscription_date = $data['inscription_date'];
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Helper;
 
-class UploadImage
+class UploadImage2
 {
     /**
      * Upload image to server
