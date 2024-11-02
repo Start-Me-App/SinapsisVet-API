@@ -62,7 +62,8 @@ class User extends Authenticatable
         'uid',
         'nationality_id',
         'tyc',
-        'active'
+        'active',
+        'sex'
     ];
 
     /**
@@ -100,7 +101,8 @@ class User extends Authenticatable
     } 
 
 
-    protected $appends = ['full_phone','register_completed'];
+    protected $appends = ['full_phone', 'register_completed', 'gender'];
+
 
     public function getFullPhoneAttribute()
     {
@@ -116,6 +118,10 @@ class User extends Authenticatable
         return false;
     }
 
+    public function getGenderAttribute()
+{
+    return $this->sex;
+}
     
 
 
