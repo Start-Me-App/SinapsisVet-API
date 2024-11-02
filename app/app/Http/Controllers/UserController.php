@@ -29,7 +29,6 @@ class UserController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
         $user        = TokenManager::getUserFromToken($accessToken);
 
-        
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

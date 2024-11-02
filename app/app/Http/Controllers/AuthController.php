@@ -129,11 +129,8 @@ class Authcontroller extends Controller
             ]);
         }
 
-
-
-        #verify if the email is already in use
-        $check_user = User::where('email', $user->email)->first();
-
+        $check_user = User::with([['role','moduleByRole.module','nationality']])->where('email', $user->email)->first();
+        
         if($check_user){
             $token = TokenManager::makeToken($check_user);
             return response()->json(['token' => $token], 200);
@@ -156,8 +153,7 @@ class Authcontroller extends Controller
             ]
         );
         
-        #get user data from database    
-        $userCreated = User::with(['role'])->where('email', $user->email)->first();
+        $userCreated = User::with([['role','moduleByRole.module','nationality']])->where('email', $user->email)->first();
         
         
         #create jwt token
