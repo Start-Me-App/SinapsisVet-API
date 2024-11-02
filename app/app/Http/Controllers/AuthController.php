@@ -128,8 +128,7 @@ class Authcontroller extends Controller
                 'message' => $exception->getMessage(),
             ]);
         }
-
-        $check_user = User::with([['role','moduleByRole.module','nationality']])->where('email', $user->email)->first();
+        $check_user = User::with(['role','moduleByRole.module','nationality'])->where('email', $user->email)->first();
         
         if($check_user){
             $token = TokenManager::makeToken($check_user);
