@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Genre extends Model
+class Categories extends Model
 {
-    use HasFactory;
+    use HasFactory; 
+
+    public $timestamps = false;
+    
+    protected $table = 'courses_category';
 
     protected $fillable = ['name'];
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
+
 }

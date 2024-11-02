@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('module_by_role', function (Blueprint $table) {
+        Schema::create('inscriptions', function (Blueprint $table) {
             $table->id();
-            $table->integer('module_id');
-            $table->integer('role_id');
-            $table->integer('list');
-            $table->integer('create');
-            $table->integer('update');
-            $table->integer('delete');
+            $table->integer('user_id');
+            $table->integer('course_id');
+            $table->integer('with_workshop');
         });
     }
 
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('module_by_role');
+        Schema::dropIfExists('inscriptions');
     }
 };

@@ -11,14 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('module_by_role', function (Blueprint $table) {
+        Schema::create('courses_category', function (Blueprint $table) {
             $table->id();
-            $table->integer('module_id');
-            $table->integer('role_id');
-            $table->integer('list');
-            $table->integer('create');
-            $table->integer('update');
-            $table->integer('delete');
+            $table->string('name');
         });
     }
 
@@ -27,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('module_by_role');
+        Schema::dropIfExists('courses_category');
     }
 };
