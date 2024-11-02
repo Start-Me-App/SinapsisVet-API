@@ -29,7 +29,6 @@ class UserController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
         $user        = TokenManager::getUserFromToken($accessToken);
 
-        
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -70,7 +69,7 @@ class UserController extends Controller
         $userData->telephone = $data['telephone'];
         $userData->area_code = $data['area_code'];
         $userData->nationality_id = $data['nationality_id'];   
-        $userData->gender = $data['gender']; 
+        $userData->sex = $data['gender']; 
 
 
         
