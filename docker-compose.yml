@@ -2,14 +2,14 @@ version: "3.1"
 
 services:
   # PHP/Apache Service
-  sinapsisvet-api-laravel-gamma:
+  sinapsisvet-api-laravel:
     build:
       context: .
       dockerfile: ./docker/Dockerfile
-    container_name: sinapsisvet-api-laravel-gamma
+    container_name: sinapsisvet-api-laravel
     restart: always
     ports:
-      - "8072:80"
+      - "8071:80"
     volumes:
       - ./app/:/var/www/app
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
@@ -18,7 +18,7 @@ services:
       - sinapsisvet-shared-network  # Red compartida
 
   # MySQL Service
-  mysql-gamma:
+  mysql:
     image: mysql:5.7
     restart: always
     environment:
@@ -29,7 +29,20 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3308:3306"
+      - "3307:3306"
+    networks:
+      - sinapsisvet-api-laravel-network
+
+  # NGINX Service
+  nginx:
+    image: nginx:latest
+    container_name: sinapsisvet-nginx
+    restart: always
+    ports:
+      - "80:80"  # This exposes NGINX to the VPS on port 80
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf  # Configuration for NGINX
+      - ./app/:/var/www/app  # Static files, if any
     networks:
       - sinapsisvet-api-laravel-network
       - sinapsisvet-shared-network  # Red compartida
