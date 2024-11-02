@@ -15,6 +15,7 @@ services:
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
       - sinapsisvet-api-laravel-network
+      - sinapsisvet-shared-network  # Red compartida
 
   # MySQL Service
   mysql-gamma:
@@ -36,6 +37,8 @@ services:
 networks:
   sinapsisvet-api-laravel-network:
     driver: bridge
+  sinapsisvet-shared-network:
+    external: true
 
 volumes:
   mysql_data:
