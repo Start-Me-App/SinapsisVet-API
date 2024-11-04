@@ -50,14 +50,14 @@ services:
       - sinapsisvet-api-laravel-network
       - sinapsisvet-shared-network
 
-   # Certbot Service
+  # Certbot Service
   certbot:
     image: certbot/certbot
     container_name: sinapsisvet-certbot
     volumes:
-      - ./docker/certbot/conf:/etc/letsencrypt  # Donde se almacenan los certificados
-      - ./docker/certbot/www:/var/www/certbot  # Carpeta de autenticación para Certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done;'"
+      - ./docker/certbot/conf:/etc/letsencrypt
+      - ./docker/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; certbot certonly --webroot -w /var/www/certbot -d sinapsisvet.com -d api-desarrollo.sinapsisvet.com --email ezequielm789@gmail.com --agree-tos --non-interactive; while :; do sleep 12h & wait $${!}; certbot renew; done;'"
     networks:
       - sinapsisvet-api-laravel-network
       - sinapsisvet-shared-network
