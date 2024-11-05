@@ -38,7 +38,14 @@ class Materials extends Model
 
     public function getFilePathUrlAttribute()
     {
-        return env('STATIC_URL') . $this->attributes['file_path'];
+        $path = explode('/', $this->attributes['file_path']);
+
+        if(count($path) <= 2){
+            return null;
+        }
+
+        return env('STATIC_URL') .'/api/materials/'.$path[2].'/'.$path[4];
+        
     }
    
     

@@ -6,7 +6,7 @@ use App\Http\Controllers\MatchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDecisionController;
 use App\Http\Controllers\CountriesController;
-use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController};
+use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController,FileController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
 
@@ -26,6 +26,10 @@ Route::get('/user', [AuthController::class,'getUser']);
 
 Route::get('/countries', [CountriesController::class,'getAll']);
 Route::get('/categories', [CategoriesController::class,'getAll']);
+
+#get file from storage
+Route::get('/materials/{lesson_id}/{checksum}',[FileController::class,'downloadFile']);
+Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
 
 #create route group for admin
 Route::group(['prefix' => 'admin'], function () {
