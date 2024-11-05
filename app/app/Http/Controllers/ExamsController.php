@@ -264,6 +264,88 @@ class ExamsController extends Controller
     }
 
 
+      /**
+     * update question of exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function updateQuestion(Request $request,$exam_id,$question_id)
+    {
+        $data = $request->all();
+        $exam = Exams::find($exam_id);   
+        
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+       
+        $question = Questions::find($question_id);
+        if(!$question){
+            return response()->json(['error' => 'Pregunta no encontrada'], 404);
+        }
 
+        $question->question_title = $data['question_title'];
+        $question->save();
+
+
+        $correct = false;
+        foreach ($data['answers'] as $answer) {
+            
+            if(!isset($answer['answer_title'])){
+                return response()->json(['error' => 'El titulo de la respuesta no puede estar vacío.', 'data' => $question], 422);
+            }
+
+            if($answer['correct'] == 1 ){
+                if($correct){
+                    return response()->json(['error' => 'Solo puede haber una respuesta correcta.', 'data' => $question], 422);
+                }
+                $correct = true;
+            }                
+
+        }
+        if(!$correct){
+            return response()->json(['error' => 'Debe haber al menos una respuesta correcta.', 'data' => $question], 422);
+        }
+
+        foreach ($data['answers'] as $answer) {
+            $answer_db = Answers::find($answer['id']);
+            if(!$answer_db){
+                return response()->json(['error' => 'Respuesta no encontrada'], 404);
+            }
+            $answer_db->answer_title = $answer['answer_title'];
+            $answer_db->is_correct = $answer['correct'];
+            $answer_db->save();
+        }
+
+        return response()->json(['message' => 'Pregunta actualizada correctamente'], 200);
+    }
+
+
+    /**
+     * delete question of exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function deleteQuestion(Request $request,$exam_id,$question_id){
+        $data = $request->all();
+        $exam = Exams::find($exam_id);   
+        
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+       
+        $question = Questions::find($question_id);
+        if(!$question){
+            return response()->json(['error' => 'Pregunta no encontrada'], 404);
+        }
+
+        $question->delete();
+
+        #delete answers
+        Answers::where('question_id',$question_id)->delete();
+        
+        return response()->json(['message' => 'Pregunta eliminada correctamente'], 200);
+    }
 
 }
