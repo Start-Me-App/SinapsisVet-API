@@ -242,11 +242,10 @@ class Authcontroller extends Controller
      */
     public function verifyEmail(Request $request)
     {
-        $params = $request->only('email', 'token');
+        $params = $request->only('token');
         
         #verify is the request has all the required fields
         $validator = validator($params, [
-            'email' => 'required|email',
             'token' => 'required'
         ]);
 
@@ -257,7 +256,7 @@ class Authcontroller extends Controller
         
              
         #get user data from database    
-        $user = User::with(['role'])->where('email', $params['email'])->where('verification_token', $params['token'])->first();
+        $user = User::with(['role'])->where('verification_token', $params['token'])->first();
             
         if(!$user){
             return response()->json(['error' => 'Token no válido'], 401);
@@ -318,11 +317,10 @@ class Authcontroller extends Controller
      */
     public function resetPassword(Request $request)
     {
-        $params = $request->only('email','password','token');
+        $params = $request->only('password','token');
         
         #verify is the request has all the required fields
         $validator = validator($params, [
-            'email' => 'required|email',
             'password' => 'required|min:6',
             'token' => 'required'
         ]);
@@ -332,13 +330,14 @@ class Authcontroller extends Controller
         }
 
         #get user data from database    
-        $user = User::with(['role'])->where('email', $params['email'])->where('password_reset_token',$params['token'])->first();
+        $user = User::with(['role'])->where('password_reset_token',$params['token'])->first();
             
         if(!$user){
             return response()->json(['error' => 'Token inválido'], 401);
         }
 
         $user->password = md5($params['password']);
+        $user->password_reset_token = null;
         $user->save();
        
         return response()->json(['msg' => 'Contraseña actualizada correctamente'], 200);

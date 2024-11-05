@@ -105,9 +105,9 @@ class TokenManager
             $payload = JWT::decode($token, new Key(md5($_ENV["JWT_SIGNATURE_KEY"]), 'HS256'));
             return $payload->user;
         } catch (BeforeValidException|ExpiredException $e) {
-            throw new \Exception("El token ha expirado.", 401);
+            response()->json(['error' => 'La sesion expiró'], 401);
         } catch (SignatureInvalidException|\Exception $e) {
-            throw new \Exception("El token no es válido.", 401);
+            response()->json(['error' => 'Token inválido'], 401);
         }
     }
 }

@@ -82,9 +82,9 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/{exam_id}/questions', [ExamsController::class,'getQuestions']);
 
         Route::get('/{exam_id}', [ExamsController::class,'getExam']);
-        #TODO
-        #PATCH de preguntas
-        #DELETE de preguntas
+       
+        Route::patch('/{exam_id}/questions/{question_id}', [ExamsController::class,'updateQuestion']);      
+        Route::delete('/{exam_id}/questions/{question_id}', [ExamsController::class,'deleteQuestion']);
 
         Route::get('/{exam_id}/results', [ExamsController::class,'getResults']);
     });
