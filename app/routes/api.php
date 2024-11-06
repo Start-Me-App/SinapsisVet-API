@@ -39,7 +39,7 @@ Route::group(['prefix' => 'admin'], function () {
     #create route group for courses
     Route::group(['prefix' => 'courses'], function () {
         Route::post('/', [CoursesController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
-        Route::patch('/{course_id}', [CoursesController::class,'update']);
+        Route::post('/{course_id}', [CoursesController::class,'update']);
         Route::delete('/{course_id}', [CoursesController::class,'delete']);
         Route::get('/list', [CoursesController::class,'listAllCourses']);
 

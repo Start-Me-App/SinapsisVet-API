@@ -107,7 +107,6 @@ class CoursesController extends Controller
             'price_usd' => 'required',
             'active' => 'required|integer',
             'category_id' => 'required',
-            'photo_url' => 'required',
             'starting_date' => 'required',
             'inscription_date' => 'required'
         ]);
@@ -128,6 +127,17 @@ class CoursesController extends Controller
         if(!$profesor){
             return response()->json(['error' => 'Profesor no encontrado'], 409);
         }
+
+        if(isset($data['photo_file'])){
+            if(!is_null($data['photo_file'])){
+                
+                $upload = UploadServer::uploadImage($data['photo_file'],'images');
+                if(!$upload){
+                    return response()->json(['error' => 'Error al subir la imagen'], 500);
+                } 
+                $course->photo_url = $upload;
+            }
+        }
   
         $course->title = $data['title'];
         $course->description = $data['description'];
@@ -136,7 +146,6 @@ class CoursesController extends Controller
         $course->price_usd = $data['price_usd'];
         $course->active = $data['active'];
         $course->category_id = $data['category_id'];
-        $course->photo_url = $data['photo_url'];
         $course->starting_date = $data['starting_date'];
         $course->inscription_date = $data['inscription_date'];
         
