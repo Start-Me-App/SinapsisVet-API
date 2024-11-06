@@ -26,12 +26,21 @@ Route::get('/user', [AuthController::class,'getUser']);
 
 Route::get('/countries', [CountriesController::class,'getAll']);
 Route::get('/categories', [CategoriesController::class,'getAll']);
+Route::get('/professors', [UserController::class,'getProfessors']);
 
 Route::get('/home/courses', [CoursesController::class,'listAllCourses']);
 
 #get file from storage
 Route::get('/materials/{lesson_id}/{checksum}',[FileController::class,'downloadFile']);
 Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
+
+
+#Courses
+Route::get('/courses', [CoursesController::class,'listCourses']);
+
+
+
+
 
 #create route group for admin
 Route::group(['prefix' => 'admin'], function () {

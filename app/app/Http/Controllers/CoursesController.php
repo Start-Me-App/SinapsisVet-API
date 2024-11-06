@@ -356,6 +356,41 @@ class CoursesController extends Controller
     }
     
 
+    /**
+     * obtiene los cursos para el usuario
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function listCourses(Request $request)
+    {   
+       
+        $accessToken = TokenManager::getTokenFromRequest();
+
+        if(is_null($accessToken)){
+            $list = Courses::with(['profesor','category'])->get();
+        }else{
+            $user = TokenManager::getUserFromToken($accessToken);
+    
+            $list = Courses::with(['profesor'])
+             ->select('courses.*', 'inscriptions.id as inscribed')
+            ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
+            ->where('courses.active', 1)
+            ->where(function($query) use ($user) {
+                $query->where('inscriptions.user_id', $user->id)
+                    ->orWhereNull('inscriptions.user_id');
+            })
+            ->get();
+        }
+
+
+    
+
+        return response()->json(['data' => $list], 200);
+    }
+    
+
+
 
     
 }

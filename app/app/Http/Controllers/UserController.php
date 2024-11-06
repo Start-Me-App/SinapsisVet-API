@@ -152,4 +152,34 @@ class UserController extends Controller
 
         return response()->json(['data' => $list], 200);
     }
+
+
+    /**
+     * Listado de usuarios
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function getProfessors(Request $request)
+    {   
+
+        $params = $request->all();
+        if(isset($params['active'])){
+            $active = $params['active'];
+        }else{
+            $active = 1;
+        }
+
+        if(isset($params['name'])){
+            $list = User::where('active',$active)->where('role_id',2)->where('name','like','%'.$params['name'].'%')->get();
+            return response()->json(['data' => $list], 200);
+        }else{
+            $list = User::where('active',$active)->where('role_id',2)->get();
+        }
+
+        
+  
+
+        return response()->json(['data' => $list], 200);
+    }
 }
