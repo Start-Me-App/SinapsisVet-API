@@ -356,6 +356,33 @@ class CoursesController extends Controller
     }
     
 
+    /**
+     * Elimina a un estudiante de un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function listCourses(Request $request)
+    {   
+        #get courses with active = 1 and left join with inscriptions
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+
+        $list = DB::table('courses')
+        ->select('courses.*, ISNULL(inscriptions.user_id,0) AS inscribed  ', DB::raw('count(inscriptions.user_id) as students'))
+        ->rightJoin('inscriptions', $user->id, '=', 'inscriptions.user_id')
+        ->where('courses.active',1)
+        ->groupBy('courses.id')
+        ->get();
+        
+    
+
+        return response()->json(['data' => $list], 200);
+    }
+    
+
+
 
     
 }
