@@ -33,6 +33,14 @@ Route::get('/home/courses', [CoursesController::class,'listAllCourses']);
 Route::get('/materials/{lesson_id}/{checksum}',[FileController::class,'downloadFile']);
 Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
 
+
+#Courses
+Route::get('/courses', [CoursesController::class,'listCourses']);
+
+
+
+
+
 #create route group for admin
 Route::group(['prefix' => 'admin'], function () {
     
