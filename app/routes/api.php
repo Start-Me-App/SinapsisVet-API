@@ -26,6 +26,7 @@ Route::get('/user', [AuthController::class,'getUser']);
 
 Route::get('/countries', [CountriesController::class,'getAll']);
 Route::get('/categories', [CategoriesController::class,'getAll']);
+Route::get('/professors', [UserController::class,'getProfessors']);
 
 Route::get('/home/courses', [CoursesController::class,'listAllCourses']);
 

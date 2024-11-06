@@ -357,25 +357,33 @@ class CoursesController extends Controller
     
 
     /**
-     * Elimina a un estudiante de un curso
+     * obtiene los cursos para el usuario
      *
      * @param $provider
      * @return JsonResponse
      */
     public function listCourses(Request $request)
     {   
-        #get courses with active = 1 and left join with inscriptions
+       
         $accessToken = TokenManager::getTokenFromRequest();
-        $user = TokenManager::getUserFromToken($accessToken);
+
+        if(is_null($accessToken)){
+            $list = Courses::with(['profesor','category'])->get();
+        }else{
+            $user = TokenManager::getUserFromToken($accessToken);
+    
+            $list = Courses::with(['profesor'])
+             ->select('courses.*', 'inscriptions.id as inscribed')
+            ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
+            ->where('courses.active', 1)
+            ->where(function($query) use ($user) {
+                $query->where('inscriptions.user_id', $user->id)
+                    ->orWhereNull('inscriptions.user_id');
+            })
+            ->get();
+        }
 
 
-        $list = DB::table('courses')
-        ->select('courses.*, ISNULL(inscriptions.user_id,0) AS inscribed  ', DB::raw('count(inscriptions.user_id) as students'))
-        ->rightJoin('inscriptions', $user->id, '=', 'inscriptions.user_id')
-        ->where('courses.active',1)
-        ->groupBy('courses.id')
-        ->get();
-        
     
 
         return response()->json(['data' => $list], 200);
