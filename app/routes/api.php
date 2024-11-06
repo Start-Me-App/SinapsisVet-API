@@ -27,6 +27,8 @@ Route::get('/user', [AuthController::class,'getUser']);
 Route::get('/countries', [CountriesController::class,'getAll']);
 Route::get('/categories', [CategoriesController::class,'getAll']);
 
+Route::get('/home/courses', [CoursesController::class,'listAllCourses']);
+
 #get file from storage
 Route::get('/materials/{lesson_id}/{checksum}',[FileController::class,'downloadFile']);
 Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
