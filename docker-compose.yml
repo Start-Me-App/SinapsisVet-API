@@ -46,7 +46,7 @@ services:
       - ./app/:/var/www/app
       - ./docker/certbot/conf:/etc/letsencrypt  # Certificados SSL de Let's Encrypt
       - ./docker/certbot/www:/var/www/certbot  # Carpeta de autenticación para Certbot
-      - ./front:/var/www/front
+      - ./front:/usr/share/nginx/html
     networks:
       - sinapsisvet-api-laravel-network
       - sinapsisvet-shared-network
