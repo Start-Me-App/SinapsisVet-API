@@ -21,7 +21,7 @@ class Emailing
         try {
             self::SMTPServerSettings($mail);
 
-            self::recipientSettings($mail, $user->email);
+            self::recipientSettings($mail, $user);
 
             self::accountMailerBcc($mail);
 
@@ -48,7 +48,7 @@ class Emailing
         try {
             self::SMTPServerSettings($mail);
 
-            self::recipientSettings($mail, $user->email);
+            self::recipientSettings($mail, $user);
 
             self::accountMailerBcc($mail);
 
@@ -70,6 +70,7 @@ class Emailing
         $mail->isSMTP();
         $mail->Host     = env('ACCOUNT_MAILER_HOST');
         $mail->SMTPAuth = true;
+        $mail->SMTPSecure = 'ssl'; 
         $mail->Port     = env('ACCOUNT_MAILER_PORT');
         $mail->Username = env('ACCOUNT_MAILER_USERNAME');
         $mail->Password = env('ACCOUNT_MAILER_PASSWORD');
