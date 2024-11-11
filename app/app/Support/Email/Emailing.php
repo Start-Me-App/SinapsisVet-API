@@ -9,23 +9,50 @@ namespace App\Support\Email;
 use Illuminate\Http\JsonResponse;
 use PHPMailer\PHPMailer\PHPMailer;
 
-class AddInventory
+class Emailing
 {
     /**
-     * Send email to user.
+     * Request password reset email.    
      */
-    public static function send($user): bool|JsonResponse
+    public static function resetPassword($user): bool|JsonResponse
     {
         $mail = new PHPMailer(true);
 
         try {
             self::SMTPServerSettings($mail);
 
-            self::recipientSettings($mail, $user);
+            self::recipientSettings($mail, $user->email);
 
             self::accountMailerBcc($mail);
 
-            self::emailContent($mail);
+            self::resetPw($mail,$user->password_reset_token);
+
+            self::sendEmail($mail);
+
+            return true;
+        } catch (\Exception $e) {
+            return response()->json(
+                data  : $e->getMessage(),
+                status: $e->getCode() <= 0 ? 500 : $e->getCode()
+            );
+        }
+    }
+
+      /**
+     * Verify email.    
+     */
+    public static function verifyEmail($user): bool|JsonResponse
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            self::SMTPServerSettings($mail);
+
+            self::recipientSettings($mail, $user->email);
+
+            self::accountMailerBcc($mail);
+
+            self::verify($mail,$user->verification_token);
 
             self::sendEmail($mail);
 
@@ -51,8 +78,8 @@ class AddInventory
 
     protected static function recipientSettings(PHPMailer $mail, $user): void
     {
-        $mail->setFrom(env('ACCOUNT_MAILER_USERNAME'), 'Precios Gamer');
-        $mail->addAddress($user->email, $user->destiny);
+        $mail->setFrom(env('ACCOUNT_MAILER_USERNAME'), 'Sinapsis Vet');
+        $mail->addAddress($user->email, $user->name);
     }
 
     protected static function accountMailerBcc(PHPMailer $mail): void
@@ -62,14 +89,19 @@ class AddInventory
         }
     }
 
-    protected static function emailContent(PHPMailer $mail): void
+    protected static function resetPw(PHPMailer $mail,$token): void
     {
         $mail->isHTML(true);
-        $mail->Subject = 'Registro de nuevo comercio.';
-        $mail->Body    = '<p>Gracias por completar el formulario. Analizaremos su solicitud de
-                                 alta en nuestro catálogo para poder agregarlo lo antes posible.
-                                 Es posible que alguien de nuestro equipo se ponga en contacto con
-                                 usted si se necesitan más detalles. ¡Saludos!</p>';
+        $mail->Subject = 'Recupero de contraseña';
+        $mail->Body    = '<p> Ingresa a este link: '.env('RESET_PW_URL').$token.'</p>';
+    }
+  
+  
+    protected static function verify(PHPMailer $mail,$token): void
+    {
+        $mail->isHTML(true);
+        $mail->Subject = 'Verifica tu email';
+        $mail->Body    = '<p> Ingresa a este link: '.env('VERIFY_PW_URL').$token.'</p>';
     }
 
     protected static function sendEmail(PHPMailer $mail): void

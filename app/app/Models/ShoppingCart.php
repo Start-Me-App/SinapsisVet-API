@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Lessons extends Model
+class ShoppingCart extends Model
 {
     use HasFactory;
     
-    public $timestamps = false;
+    public $timestamps = true;
 
+    
+    protected $table = 'shopping_cart';
     
      /**
      * The primary key associated with the table.
@@ -26,21 +28,19 @@ class Lessons extends Model
      * @var string[]
      */
     protected $fillable = [
-        'course_id',
-        'name',
-        'description',
-        'active',
-        'video_url'
+        'user_id',
+        'active'
     ];
    
-    public function course()
+
+    public function items()
     {
-        return $this->hasOne(Courses::class, 'id', 'course_id');
+        return $this->hasMany(ShoppingCartContent::class, 'shopping_cart_id', 'id');
     }
 
-    public function materials()
+/*     public function materials()
     {
         return $this->hasMany(Materials::class, 'lesson_id', 'id');
-    }
+    } */
 
 }

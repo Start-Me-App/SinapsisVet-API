@@ -100,6 +100,12 @@ class User extends Authenticatable
         return $this->belongsTo(Countries::class,'nationality_id','id');
     } 
 
+    public function shoppingCart()
+    {
+        return $this->hasOne(ShoppingCart::class,'user_id','id');
+    } 
+
+
 
     protected $appends = ['full_phone', 'register_completed', 'gender'];
 
@@ -119,10 +125,10 @@ class User extends Authenticatable
     }
 
     public function getGenderAttribute()
-{
-    return $this->sex;
-}
-    
+    {
+        return $this->sex;
+    }
+        
 
 
 

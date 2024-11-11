@@ -6,7 +6,7 @@ use App\Http\Controllers\MatchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDecisionController;
 use App\Http\Controllers\CountriesController;
-use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController,FileController};
+use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController,FileController,ShoppingCartController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
 
@@ -36,7 +36,26 @@ Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
 
 
 #Courses
-Route::get('/courses', [CoursesController::class,'listCourses']);
+
+#create route group for courses
+Route::group(['prefix' => 'courses'], function () {
+    Route::get('', [CoursesController::class,'listCourses']);
+    Route::get('/{course_id}', [CoursesController::class,'listCourse']);
+    Route::get('/{course_id}/lessons', [CoursesController::class,'listLessons']);
+    Route::get('/{course_id}/exams', [CoursesController::class,'listExams']);
+    Route::get('/{course_id}/workshops', [CoursesController::class,'listWorkshops']);
+    
+});
+
+#create route group for courses
+Route::group(['prefix' => 'shoppingCart'], function () {
+    Route::get('', [ShoppingCartController::class,'get']);
+    Route::post('/addItem', [ShoppingCartController::class,'addItem']);
+    Route::post('/removeItem', [ShoppingCartController::class,'removeItem']);
+    Route::post('/process', [ShoppingCartController::class,'process']);
+    
+});
+
 
 
 

@@ -388,6 +388,133 @@ class CoursesController extends Controller
 
         return response()->json(['data' => $list], 200);
     }
+
+
+      /**
+     * obtiene un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function listCourse(Request $request,$course_id)
+    {   
+        $list = Courses::with(['profesor','category'])->find($course_id);
+      
+        return response()->json(['data' => $list], 200);
+
+    }
+
+
+    
+
+     /**
+     * obtiene los lecciones de un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function listLessons(Request $request,$course_id)
+    {   
+       
+        $accessToken = TokenManager::getTokenFromRequest();
+
+        if(is_null($accessToken)){
+            $list = Lessons::with(['materials'])->where('course_id',$course_id)->get();
+            foreach($list as $lesson){
+                $lesson->video_url = null;
+                foreach ($lesson->materials as $m) {
+                    $m->file_path = null;
+                    $m->file_path_url = null;
+                }
+            }
+        }else{
+            $user = TokenManager::getUserFromToken($accessToken);
+            $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();
+            if(!$inscription){
+                $list = Lessons::with(['materials'])->where('course_id',$course_id)->get();
+                foreach($list as $lesson){
+                    $lesson->video_url = null;
+                    foreach ($lesson->materials as $m) {
+                        $m->file_path = null;
+                        $m->file_path_url = null;
+                    }
+                }
+                return response()->json(['data' => $list], 200);
+            }
+          
+            $list = Lessons::with(['materials'])->where('course_id',$course_id)->where('active',1)->get();
+        }
+
+
+        return response()->json(['data' => $list], 200);
+    }
+
+
+    
+     /**
+     * obtiene los examenes de un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function listExams(Request $request,$course_id)
+    {   
+       
+        $accessToken = TokenManager::getTokenFromRequest();
+
+        if(is_null($accessToken)){          
+            $list = Exams::where('course_id',$course_id)->where('active',1)->get();
+        }else{
+            $user = TokenManager::getUserFromToken($accessToken);    
+
+            $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();            
+            if(!$inscription){
+                $list = Exams::where('course_id',$course_id)->where('active',1)->get();
+            }
+
+            $list = Exams::with(['questions'])->where('course_id',$course_id)->where('active',1)->get();
+        }
+
+        return response()->json(['data' => $list], 200);
+    }
+    
+    
+     /**
+     * obtiene los workshops de un curso
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function listWorkshops(Request $request,$course_id)
+    {   
+       
+        $accessToken = TokenManager::getTokenFromRequest();
+
+        if(is_null($accessToken)){
+            $list = Workshops::where('course_id',$course_id)->where('active',1)->get();
+            foreach ($list as $w) {
+                $w->video_url = null;
+            }
+            return response()->json(['data' => $list], 200);
+        }else{
+
+            $user = TokenManager::getUserFromToken($accessToken);
+            $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->where('with_workshop',1)->first();
+            if(!$inscription){
+                $list = Workshops::where('course_id',$course_id)->where('active',1)->get();
+
+                foreach ($list as $w) {
+                    $w->video_url = null;
+                }
+      
+                return response()->json(['data' => $list], 200);
+            }
+          
+            $list = Workshops::where('course_id',$course_id)->where('active',1)->get();
+      
+            return response()->json(['data' => $list], 200);
+        }
+    }
     
 
 

@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use App\Models\User;
+use App\Models\{User,ShoppingCart};
+use App\Support\Email\Emailing;
 use Laravel\Socialite\Facades\Socialite;
 use App\Support\TokenManager;
 
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
+use Kreait\Firebase\Value\Email;
 
 class Authcontroller extends Controller
 {
@@ -91,6 +93,8 @@ class Authcontroller extends Controller
         #get user data from database    
         $userCreated = User::with(['role'])->where('email', $params['email'])->first();
 
+
+        Emailing::verifyEmail($userCreated);
 
         return response()->json(['msg' => 'Usuario creado con éxito'], 200);
         
@@ -203,7 +207,7 @@ class Authcontroller extends Controller
         }    
 
         if($user->email_verified_at == null){
-            return response()->json(['error' => 'Email no verificado'], 401);
+            return response()->json(['error' => 'Email no verificado'], 402);
         }
 
         #create jwt token
@@ -229,7 +233,26 @@ class Authcontroller extends Controller
             return response()->json(['error' => 'La sesion expiró'], 401);
         }
 
+
+
+
         $user = User::with(['role','moduleByRole.module','nationality'])->find($user->id);
+
+        #check if has a active shopping cart
+        
+        $cart = ShoppingCart::where('user_id', $user->id)->where('active',1)->first();
+        if(!$cart){
+            #create a new shopping cart
+            $cart = new ShoppingCart();
+            $cart->user_id = $user->id;
+            $cart->active = 1;
+            $cart->save();
+        }
+
+        $user->shopping_cart_id = $cart->id;
+
+
+
         return response()->json($user);
     }
    
@@ -303,6 +326,8 @@ class Authcontroller extends Controller
         $user->save();
 
         #TODO send email
+        
+        Emailing::resetPassword($user);
         
         return response()->json(['msg' => 'Recupero de contraseña enviado correctamente'], 200);
     }
