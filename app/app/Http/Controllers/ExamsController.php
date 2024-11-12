@@ -9,6 +9,13 @@ use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
 use App\Models\{Courses, Exams, Questions,Answers,Results};
 
+use Illuminate\Support\Facades\DB;
+
+use App\Support\TokenManager;
+
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
 
 class ExamsController extends Controller
 {   
@@ -347,5 +354,111 @@ class ExamsController extends Controller
         
         return response()->json(['message' => 'Pregunta eliminada correctamente'], 200);
     }
+
+
+    /**
+     * show exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function showExam(Request $request,$exam_id){
+
+        $data = $request->all();
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        #get exam with questions and answers where questions.active = 1       
+        $exam = Exams::with(['questions.answers'])->where('id',$exam_id)->where('active',1)->first();
+
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+
+        $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$exam->course_id)->first();
+
+        if(!$inscription){
+            return response()->json(['error' => 'No tienes acceso a este examen'], 403);
+        }
+
+        foreach ($exam->questions as $q) {
+            
+            foreach ($q->answers as $a) {
+                unset($a->is_correct);
+            }
+
+        }
+
+        
+        return response()->json(['data' => $exam], 200);
+    }
+
+
+     /**
+     * submit exam 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function submitExam(Request $request,$exam_id){
+
+        $data = $request->all();
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        #get exam with questions and answers where questions.active = 1       
+        $exam = Exams::with(['questions.answers'])->where('id',$exam_id)->where('active',1)->first();
+
+        if(!$exam){
+            return response()->json(['error' => 'Examen no encontrado'], 404);
+        }
+
+        $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$exam->course_id)->first();
+
+        if(!$inscription){
+            return response()->json(['error' => 'No tienes acceso a este examen'], 403);
+        }
+
+        $totalOfQuestions = count($exam->questions);    
+        $totalOfCorrectAnswers = 0;
+        
+        foreach ($data as $answers_student) {
+           
+            $question = Questions::find($answers_student['question_id']);
+            if(!$question){
+                return response()->json(['error' => 'Pregunta no encontrada'], 404);
+            }
+
+            $correct = Answers::where('question_id',$answers_student['question_id'])->where('is_correct',1)->first();
+
+          
+            if($correct->id == $answers_student['chosen_answer_id']){
+                $totalOfCorrectAnswers++;
+            }
+
+        }   
+
+        $final_grade = number_format($totalOfCorrectAnswers/$totalOfQuestions,2)*10;
+        #insert or update results
+        $result = Results::where('user_id', $user->id)->where('exam_id', $exam_id)->first();
+        
+        if($result){
+            if($result->final_grade < $final_grade) {
+                $result->final_grade = $final_grade;
+                $result->save();
+            }
+        }else{
+            $result = Results::create([
+                'user_id' => $user->id,
+                'exam_id' => $exam_id,
+                'final_grade' => $final_grade,
+            ]);
+        }
+
+
+             
+        return response()->json(['final_grade' => $final_grade], 200);
+    }
+
 
 }

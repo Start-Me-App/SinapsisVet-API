@@ -6,6 +6,7 @@ use App\Http\Controllers\MatchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDecisionController;
 use App\Http\Controllers\CountriesController;
+use App\Http\Controllers\PDFController;
 use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController,FileController,ShoppingCartController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
@@ -35,6 +36,9 @@ Route::get('/materials/{lesson_id}/{checksum}',[FileController::class,'downloadF
 Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
 
 
+Route::get('generate-pdf', [PDFController::class, 'generatePDF']);
+
+
 #Courses
 
 #create route group for courses
@@ -44,8 +48,13 @@ Route::group(['prefix' => 'courses'], function () {
     Route::get('/{course_id}/lessons', [CoursesController::class,'listLessons']);
     Route::get('/{course_id}/exams', [CoursesController::class,'listExams']);
     Route::get('/{course_id}/workshops', [CoursesController::class,'listWorkshops']);
-    
 });
+
+Route::group(['prefix' => 'exams'], function () {
+    Route::get('/{exam_id}', [ExamsController::class,'showExam']);
+    Route::post('/{exam_id}/submit', [ExamsController::class,'submitExam']);
+});
+
 
 #create route group for courses
 Route::group(['prefix' => 'shoppingCart'], function () {
