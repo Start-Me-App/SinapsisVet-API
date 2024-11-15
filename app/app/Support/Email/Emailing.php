@@ -70,7 +70,7 @@ class Emailing
         $mail->isSMTP();
         $mail->Host     = env('ACCOUNT_MAILER_HOST');
         $mail->SMTPAuth = true;
-        $mail->SMTPSecure = 'ssl'; 
+        $mail->SMTPDebug = 0; 
         $mail->Port     = env('ACCOUNT_MAILER_PORT');
         $mail->Username = env('ACCOUNT_MAILER_USERNAME');
         $mail->Password = env('ACCOUNT_MAILER_PASSWORD');
