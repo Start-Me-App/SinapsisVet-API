@@ -442,7 +442,14 @@ class CoursesController extends Controller
                 return response()->json(['data' => $list], 200);
             }
           
-            $list = Lessons::with(['materials'])->where('course_id',$course_id)->where('active',1)->get();
+            $list = Lessons::with(['materials'])
+            ->leftJoin('view_lesson', function($join) use ($user) {
+                $join->on('lessons.id', '=', 'view_lesson.lesson_id')
+                    ->where('view_lesson.user_id', '=', $user->id);
+            })
+            ->select('lessons.*', DB::raw('COALESCE(view_lesson.id, 0) as viewed'))
+            ->where('course_id', $course_id)
+            ->get();
         }
 
 
@@ -472,7 +479,12 @@ class CoursesController extends Controller
                 $list = Exams::where('course_id',$course_id)->where('active',1)->get();
             }
 
-            $list = Exams::with(['questions'])->where('course_id',$course_id)->where('active',1)->get();
+            $list = Exams::leftJoin('exams_results', function($join) use ($user) {
+                $join->on('exams.id', '=', 'exams_results.exam_id')
+                    ->where('exams_results.user_id', '=', $user->id);
+            })
+            ->select('exams.*', DB::raw('CASE WHEN exams_results.final_grade > 6 THEN 1 ELSE 0 END as approved'))
+            ->where('course_id', $course_id)->where('active',1)->get();
         }
 
         return response()->json(['data' => $list], 200);

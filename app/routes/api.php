@@ -56,6 +56,10 @@ Route::group(['prefix' => 'exams'], function () {
 });
 
 
+Route::group(['prefix' => 'lessons'], function () {
+    Route::post('/{lesson_id}/view', [LessonsController::class,'viewLesson']);
+});
+
 #create route group for courses
 Route::group(['prefix' => 'shoppingCart'], function () {
     Route::get('', [ShoppingCartController::class,'get']);

@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, User, Lessons,Materials};
+use App\Models\{Courses, User, Lessons,Materials,ViewLesson};
 
 use Illuminate\Support\Facades\DB;
 
@@ -167,6 +167,39 @@ class LessonsController extends Controller
             return response()->json(['error' => 'Leccion no encontrada'], 404);
         }
         return response()->json(['data' => $lesson ], 200);
+
+    }
+
+
+
+    /**
+     * view lesson 
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function viewLesson(Request $request,$lesson_id)
+    {
+        $data = $request->all();
+        $lesson = Lessons::find($lesson_id);           
+        
+        if(!$lesson){
+            return response()->json(['error' => 'Leccion no encontrada'], 404);
+        }
+
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        #mark lesson as viewed
+        $viewLesson = ViewLesson::where('user_id',$user->id)->where('lesson_id',$lesson_id)->first();
+        if(!$viewLesson){
+            $viewLesson = new ViewLesson();
+            $viewLesson->user_id = $user->id;
+            $viewLesson->lesson_id = $lesson_id;
+            $viewLesson->save();
+        }
+
+        return response()->json(['data' => $viewLesson ], 200);
 
     }
 
