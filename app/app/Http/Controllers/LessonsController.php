@@ -143,11 +143,31 @@ class LessonsController extends Controller
         if(!$lesson){
             return response()->json(['error' => 'Leccion no encontrada'], 404);
         }
-        $lesson->active = 0;
+       
+       
+        #delete materials from lesson
+        Materials::where('lesson_id',$lesson_id)->delete();
 
-        if($lesson->save()){
+        #delete files from storage
+        $path = storage_path('app/public/'.$lesson_id.'/materials');
+        
+        if(file_exists($path)){
+            $files = glob($path.'/*'); // get all file names
+            foreach($files as $file){ // iterate files
+                if(is_file($file)){
+                    unlink($file); // delete file
+                }
+            }
+            rmdir($path);
+            rmdir(storage_path('app/public/'.$lesson_id));
+
+        }
+
+        if($lesson->delete()){
             return response()->json(['message' => 'Leccion eliminada correctamente'], 200);
-        }   
+        }
+
+
         return response()->json(['error' => 'Error al eliminar la leccion'], 500);
     }
 
