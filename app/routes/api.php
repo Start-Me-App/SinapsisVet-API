@@ -10,6 +10,7 @@ use App\Http\Controllers\PDFController;
 use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController,FileController,ShoppingCartController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
+use App\Models\Categories;
 
 Route::post('/login', [AuthController::class,'login']);
 Route::post('/register', [AuthController::class,'register']);
@@ -139,6 +140,14 @@ Route::group(['prefix' => 'admin'], function () {
         Route::delete('/{material_id}', [MaterialsController::class,'delete']);
 
         Route::get('/{material_id}', [MaterialsController::class,'getMaterial']);
+    });
+
+    #create route group for categories
+    Route::group(['prefix' => 'categories'], function () {
+        Route::post('/', [CategoriesController::class,'create']);
+        Route::patch('/{category_id}', [CategoriesController::class,'update']);
+        Route::delete('/{category_id}', [CategoriesController::class,'delete']);
+
     });
 });
 

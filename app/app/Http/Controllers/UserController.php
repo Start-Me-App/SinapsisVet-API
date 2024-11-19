@@ -104,8 +104,7 @@ class UserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }   
        
-        
-        if(!$user->role->id != 1){
+        if($user->role->id != 1){
             return response()->json(['error' => 'Unauthorized'], 401);
         }
         $data = $request->all();
@@ -141,10 +140,10 @@ class UserController extends Controller
         }
 
         if(isset($params['name'])){
-            $list = User::where('active',$active)->where('role_id',3)->where('name','like','%'.$params['name'].'%')->get();
+            $list = User::with(['nationality'])->where('active',$active)->where('role_id',3)->where('name','like','%'.$params['name'].'%')->get();
             return response()->json(['data' => $list], 200);
         }else{
-            $list = User::where('active',$active)->where('role_id',3)->get();
+            $list = User::with(['nationality'])->where('active',$active)->where('role_id',3)->get();
         }
 
         
