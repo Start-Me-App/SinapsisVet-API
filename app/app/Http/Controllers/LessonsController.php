@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
 use App\Models\{Courses, User, Lessons,Materials,ViewLesson};
+use Illuminate\Support\Facades\Input;
 
 use Illuminate\Support\Facades\DB;
 
@@ -96,14 +97,15 @@ class LessonsController extends Controller
      */
     public function update(Request $request,$lesson_id)
     {
+        $data =  $request->all();    
 
-        $data = $request->all();    
         $validator = validator($data, [
             'name' => 'required',
             'description' => 'required',
             'active' => 'required|integer',
             'video_url' => 'required'
         ]);
+
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
@@ -122,6 +124,30 @@ class LessonsController extends Controller
 
 
         if($lesson->save()){
+
+                 #get materials from request
+                // Retrieve all files from 'materials' input field
+                $materials = $request->file('materials');
+                $array_ids = [];
+                if ($materials && is_array($materials)) {
+                    foreach ($materials as $file) {
+                        if(is_file($file)){
+                            $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
+    
+                            $material = new Materials();
+                            $material->lesson_id = $lesson->id;
+                            $material->file_path = $path;
+                            $material->name = $file->getClientOriginalName();
+                            $material->active = 1;
+                            $material->save();
+                            $array_ids[] = $material->id;                           
+                        }else{
+                            $array_ids[] = $file->id;
+                        }
+                    }
+                }
+                Materials::where('lesson_id',$lesson_id)->whereNotIn('id',$array_ids)->delete();
+
             return response()->json(['message' => 'Leccion actualizada correctamente', 'data' => $lesson ], 200);
         }
 
