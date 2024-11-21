@@ -131,6 +131,8 @@ class LessonsController extends Controller
                 $array_ids = [];
                 if ($materials && is_array($materials)) {
                     foreach ($materials as $file) {
+                        #print file type
+                        var_dump(gettype($file));
                         if(!is_array($file)){
                             var_dump('soy un file');
                             $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
