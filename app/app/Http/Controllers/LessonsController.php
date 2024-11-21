@@ -128,9 +128,9 @@ class LessonsController extends Controller
                 $materials = $request->input('materials');
                 $new_materials = $request->file('new_materials');
                 $array_ids = [];
-                if ($new_materials && is_array($materials)) {
+                if ($new_materials) {
                     foreach ($new_materials as $file) {
-                        if(!is_array($file)){
+                        if(is_file($file)){
                             $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
     
                             $material = new Materials();
@@ -143,12 +143,14 @@ class LessonsController extends Controller
                         }
                     }
                 }
-                foreach($materials as $material){
-                    $array_ids[] = $material['id'];
+                if($materials){
+                    foreach($materials as $material){
+                        $array_ids[] = $material['id'];
+                    }
                 }
                 Materials::where('lesson_id',$lesson_id)->whereNotIn('id',$array_ids)->delete();
-
-            return response()->json(['message' => 'Leccion actualizada correctamente', 'data' => $lesson ], 200);
+                $lesson = Lessons::with('materials')->where('id',$lesson_id)->first();
+                return response()->json(['message' => 'Leccion actualizada correctamente', 'data' => $lesson ], 200);
         }
 
         return response()->json(['error' => 'Error al actualizar la leccion'], 500);
@@ -207,7 +209,7 @@ class LessonsController extends Controller
     public function getLesson(Request $request,$lesson_id)
     {
         $data = $request->all();
-        $lesson = Lessons::find($lesson_id);           
+        $lesson = Lessons::with('materials')->find($lesson_id);           
         
         if(!$lesson){
             return response()->json(['error' => 'Leccion no encontrada'], 404);
