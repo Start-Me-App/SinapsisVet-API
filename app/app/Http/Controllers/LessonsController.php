@@ -128,6 +128,8 @@ class LessonsController extends Controller
                  #get materials from request
                 // Retrieve all files from 'materials' input field
                 $materials = $request->input('materials');
+                var_dump($materials);
+                exit;
                 $array_ids = [];
                 if ($materials && is_array($materials)) {
                     foreach ($materials as $file) {
