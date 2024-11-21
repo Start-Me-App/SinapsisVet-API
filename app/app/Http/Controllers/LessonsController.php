@@ -132,6 +132,7 @@ class LessonsController extends Controller
                 if ($materials && is_array($materials)) {
                     foreach ($materials as $file) {
                         if(is_file($file)){
+                            var_dump('soy un file');
                             $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
     
                             $material = new Materials();
@@ -142,6 +143,8 @@ class LessonsController extends Controller
                             $material->save();
                             $array_ids[] = $material->id;                           
                         }else{
+                            var_dump('soy un id');
+                            var_dump($file);
                             $array_ids[] = $file->id;
                         }
                     }
