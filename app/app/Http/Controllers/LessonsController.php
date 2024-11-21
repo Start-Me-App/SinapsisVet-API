@@ -125,23 +125,12 @@ class LessonsController extends Controller
 
         if($lesson->save()){
 
-                 #get materials from request
-                // Retrieve all files from 'materials' input field
-                #retrieve materials from request
-                $aux = [];
                 $materials = $request->input('materials');
-                $mat = $request->file('materials');
-                array_push($aux, $mat);
-                array_push($aux, $materials);
-
-                return response()->json($aux, 200);
+                $new_materials = $request->file('new_materials');
                 $array_ids = [];
-                if ($materials && is_array($materials)) {
-                    foreach ($materials as $file) {
-                        #print file type
-                        var_dump(gettype($file));
+                if ($new_materials && is_array($materials)) {
+                    foreach ($new_materials as $file) {
                         if(!is_array($file)){
-                            var_dump('soy un file');
                             $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
     
                             $material = new Materials();
@@ -151,12 +140,11 @@ class LessonsController extends Controller
                             $material->active = 1;
                             $material->save();
                             $array_ids[] = $material->id;                           
-                        }else{
-                            var_dump('soy un id');
-                            var_dump($file);
-                            $array_ids[] = $file['id'];
                         }
                     }
+                }
+                foreach($materials as $material){
+                    $array_ids[] = $material['id'];
                 }
                 Materials::where('lesson_id',$lesson_id)->whereNotIn('id',$array_ids)->delete();
 
