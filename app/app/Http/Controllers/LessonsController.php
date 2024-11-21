@@ -127,8 +127,14 @@ class LessonsController extends Controller
 
                  #get materials from request
                 // Retrieve all files from 'materials' input field
+                #retrieve materials from request
+                $aux = [];
                 $materials = $request->input('materials');
-                return response()->json($materials, 200);
+                $mat = $request->file('materials');
+                array_push($aux, $mat);
+                array_push($aux, $materials);
+
+                return response()->json($aux, 200);
                 $array_ids = [];
                 if ($materials && is_array($materials)) {
                     foreach ($materials as $file) {
