@@ -145,7 +145,7 @@ class LessonsController extends Controller
                         }else{
                             var_dump('soy un id');
                             var_dump($file);
-                            $array_ids[] = $file->id;
+                            $array_ids[] = $file['id'];
                         }
                     }
                 }
