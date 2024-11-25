@@ -18,6 +18,8 @@ return new class extends Migration
             $table->float('price_ars');
             $table->float('price_usd');
             $table->string('description');
+            $table->string('presentation');
+            $table->string('objective');
             $table->integer('active');
             $table->integer('category_id');
             $table->string('photo_url');

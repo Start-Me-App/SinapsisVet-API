@@ -131,6 +131,7 @@ class LessonsController extends Controller
                 if ($new_materials) {
                     foreach ($new_materials as $file) {
                         if(is_file($file)){
+                        
                             $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
     
                             $material = new Materials();

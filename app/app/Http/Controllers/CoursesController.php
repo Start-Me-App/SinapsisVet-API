@@ -37,7 +37,9 @@ class CoursesController extends Controller
             'category_id' => 'required',
             'photo_file' => 'required',
             'starting_date' => 'required',
-            'inscription_date' => 'required'
+            'inscription_date' => 'required',
+            'objective' => 'required',
+            'presentation' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -78,6 +80,8 @@ class CoursesController extends Controller
         $course->photo_url = $upload;
         $course->starting_date = $data['starting_date'];
         $course->inscription_date = $data['inscription_date'];
+        $course->objective = $data['objective'];
+        $course->presentation = $data['presentation'];
 
         if($course->save()){
             return response()->json(['message' => 'Curso creado correctamente', 'data' => $course ], 200);
@@ -108,7 +112,9 @@ class CoursesController extends Controller
             'active' => 'required|integer',
             'category_id' => 'required',
             'starting_date' => 'required',
-            'inscription_date' => 'required'
+            'inscription_date' => 'required',
+            'objective' => 'required',
+            'presentation' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -148,6 +154,8 @@ class CoursesController extends Controller
         $course->category_id = $data['category_id'];
         $course->starting_date = $data['starting_date'];
         $course->inscription_date = $data['inscription_date'];
+        $course->objective = $data['objective'];
+        $course->presentation = $data['presentation'];
         
         if($course->save()){
             return response()->json(['message' => 'Curso actualizado correctamente', 'data' => $course ], 200);
