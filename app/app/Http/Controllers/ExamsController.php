@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Exams, Questions,Answers,Results};
+use App\Models\{Courses, Exams, Questions,Answers, Lessons, Results};
 
 use Illuminate\Support\Facades\DB;
 
@@ -39,23 +39,41 @@ class ExamsController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        if(!isset($data['course_id'])){
+        if(!isset($data['course_id']) &&  !isset($data['lesson_id'])){
             return response()->json(['error' => 'Faltan datos'], 422);
         }
 
         if(isset($data['course_id'])){
             #validate if course exists
             $course = Courses::where('id',$data['course_id'])->first();
-
+            $course_id= $course->id;
             if(!$course){
                 return response()->json(['error' => 'El curso no existe'], 409);
             }
 
+        }else{
+            $course_id = null;
         }
+
+        if(isset($data['lesson_id'])){
+            #validate if lesson exists
+            $lesson = Lessons::where('id',$data['lesson_id'])->first();
+            $lesson_id = $lesson->id;
+            if(!$lesson){
+                return response()->json(['error' => 'La leccion no existe'], 409);
+            }
+
+        }else{
+            $lesson_id = null;
+        }
+
+        
+
     
 
         $exam = new Exams();
-        $exam->course_id = $data['course_id'];
+        $exam->course_id = $course_id;
+        $exam->lesson_id = $lesson_id;
         $exam->name = $data['name'];    
         $exam->active = $data['active'];
 
@@ -89,21 +107,34 @@ class ExamsController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        if(!isset($data['course_id'])){
+        if(!isset($data['course_id']) &&  !isset($data['lesson_id'])){
             return response()->json(['error' => 'Faltan datos'], 422);
         }
-
-    
 
         if(isset($data['course_id'])){
             #validate if course exists
             $course = Courses::where('id',$data['course_id'])->first();
-
+            $course_id= $course->id;
             if(!$course){
                 return response()->json(['error' => 'El curso no existe'], 409);
             }
 
+        }else{
+            $course_id = null;
         }
+
+        if(isset($data['lesson_id'])){
+            #validate if lesson exists
+            $lesson = Lessons::where('id',$data['lesson_id'])->first();
+            $lesson_id = $lesson->id;
+            if(!$lesson){
+                return response()->json(['error' => 'La leccion no existe'], 409);
+            }
+
+        }else{
+            $lesson_id = null;
+        }
+
 
         #validate if exam exists
         $exam = Exams::where('id',$exam_id)->first();
@@ -112,7 +143,6 @@ class ExamsController extends Controller
             return response()->json(['error' => 'El examen no existe'], 409);
         }
         
-        $exam->course_id = $data['course_id'];
         $exam->name = $data['name'];    
         $exam->active = $data['active'];
 

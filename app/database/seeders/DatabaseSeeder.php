@@ -21,7 +21,10 @@ class DatabaseSeeder extends Seeder
         DB::table('users')->insert([
             ['name' => 'Admin', 'lastname' => 'Admin', 'email' => 'admin@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 1,'active' => 1],
             ['name' => 'Profesor', 'lastname' => 'Profesor', 'email' => 'profe@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1],
-            ['name' => 'Alumno', 'lastname' => 'Alumno', 'email' => 'alumno@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 3,'active' => 1]]);  
+            ['name' => 'Alumno', 'lastname' => 'Alumno', 'email' => 'alumno@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 3,'active' => 1],
+            ['name' => 'Fernando', 'lastname' => 'Pellegrino', 'email' => 'fpellegrino@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1],
+            ['name' => 'Javier', 'lastname' => 'Ochoa', 'email' => 'jochoa@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1],
+        ]);  
          
         DB::table('module')->insert([
             ['name' => 'users']
@@ -55,9 +58,9 @@ class DatabaseSeeder extends Seeder
 
 
             DB::table('exams')->insert([
-                ['name' => 'exa 1', 'active' => 1, 'course_id' => 1,],
-                ['name' => 'exa 2', 'active' => 1, 'course_id' => 1,],
-                ['name' => 'eax 2-1', 'active' => 1, 'course_id' => 2,]]);
+                ['name' => 'exa 1', 'active' => 1, 'course_id' => 1,'lesson_id' => null],
+                ['name' => 'exa 2', 'active' => 1, 'course_id' => 1,'lesson_id' => null],
+                ['name' => 'eax 2-1', 'active' => 1, 'course_id' => null,'lesson_id' => 2]]);
 
             DB::table('courses_category')->insert([
                 ['name' => 'Categoria 1'],

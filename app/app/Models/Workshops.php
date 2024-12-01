@@ -39,9 +39,9 @@ class Workshops extends Model
         return $this->hasOne(Courses::class, 'id', 'course_id');
     }
 
-/*     public function materials()
+    public function materials()
     {
-        return $this->hasMany(Materials::class, 'lesson_id', 'id');
-    } */
+        return $this->hasMany(Materials::class, 'workshop_id', 'id');
+    } 
 
 }

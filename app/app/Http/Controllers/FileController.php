@@ -23,10 +23,15 @@ class FileController extends Controller
      * @param $provider
      * @return JsonResponse
      */
-    public function downloadFile($lesson_id, $filename)
+    public function downloadFile($lessonOrWorkshop,$id, $filename)
     {
-        $material = Materials::with(['lesson'])->where('lesson_id',$lesson_id)->where('file_path','/storage/'.$lesson_id.'/materials/'.$filename)->first();
-        
+        if($lessonOrWorkshop == 'lessons'){
+            $whereId = 'lesson_id';
+        }else{
+            $whereId = 'workshop_id';
+        }
+          
+        $material = Materials::with([$lessonOrWorkshop])->where($whereId,$id)->where('file_path','/storage/'.$lessonOrWorkshop.'/'.$id.'/materials/'.$filename)->first();
         if(!$material){
             return response()->json(['error' => 'El material no existe'], 409);
         }
@@ -37,13 +42,14 @@ class FileController extends Controller
 
         if($user->role->id != 1){            
             #if user is not admin, validate if user is inscribed in course
-            $is_inscribed = Inscriptions::where('user_id',$user->id)->where('course_id',$material->lesson->course_id)->first();
-            if(!$is_inscribed){
+            $is_inscribed_lesson = Inscriptions::where('user_id',$user->id)->where('course_id',$material->lesson->course_id)->first();
+            $is_inscribed_workshop = Inscriptions::where('user_id',$user->id)->where('course_id',$material->workshop->course_id)->first();
+            if(!$is_inscribed_workshop && !$is_inscribed_lesson){
                 return response()->json(['error' => 'No tienes permisos para descargar este archivo'], 409);
             }
         }   
 
-        $path = storage_path('app/public/'.$lesson_id.'/materials/'.$filename);
+        $path = storage_path('app/public/'.$lessonOrWorkshop.'/'.$id.'/materials/'.$filename);
         return response()->download($path);
 
     }

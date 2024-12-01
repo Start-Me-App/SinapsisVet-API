@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('materials', function (Blueprint $table) {
             $table->id();
-            $table->string('lesson_id');
+            $table->integer('lesson_id')->nullable();
+            $table->integer('workshop_id')->nullable();
             $table->string('name');
             $table->string('file_path');
             $table->integer('active');

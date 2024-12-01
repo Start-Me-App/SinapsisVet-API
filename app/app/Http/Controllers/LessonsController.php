@@ -66,7 +66,7 @@ class LessonsController extends Controller
                 if ($materials && is_array($materials)) {
                     foreach ($materials as $file) {
                     
-                        $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
+                        $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
 
                         $material = new Materials();
                         $material->lesson_id = $lesson->id;
@@ -132,7 +132,7 @@ class LessonsController extends Controller
                     foreach ($new_materials as $file) {
                         if(is_file($file)){
                         
-                            $path = UploadServer::uploadFile($file, $lesson->id.'/materials');
+                            $path = UploadServer::uploadFile($file, 'lessons/'.$lesson->id.'/materials');
     
                             $material = new Materials();
                             $material->lesson_id = $lesson->id;
@@ -178,7 +178,7 @@ class LessonsController extends Controller
         Materials::where('lesson_id',$lesson_id)->delete();
 
         #delete files from storage
-        $path = storage_path('app/public/'.$lesson_id.'/materials');
+        $path = storage_path('app/public/lessons/'.$lesson_id.'/materials');
         
         if(file_exists($path)){
             $files = glob($path.'/*'); // get all file names
@@ -188,7 +188,7 @@ class LessonsController extends Controller
                 }
             }
             rmdir($path);
-            rmdir(storage_path('app/public/'.$lesson_id));
+            rmdir(storage_path('app/public/lessons/'.$lesson_id));
 
         }
 

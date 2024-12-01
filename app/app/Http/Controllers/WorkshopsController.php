@@ -7,11 +7,14 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, User, Workshops};
+use App\Models\{Courses, User, Workshops,Materials};
 
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
+
+use App\Support\UploadServer;
+use function PHPSTORM_META\map;
 
 class WorkshopsController extends Controller
 {   
@@ -55,6 +58,26 @@ class WorkshopsController extends Controller
 
 
         if($workshop->save()){
+
+             #get materials from request
+                // Retrieve all files from 'materials' input field
+                $materials = $request->file('materials');
+               
+                if ($materials && is_array($materials)) {
+                    foreach ($materials as $file) {
+                    
+                        $path = UploadServer::uploadFile($file, 'workshop/'.$workshop->id.'/materials');
+
+                        $material = new Materials();
+                        $material->workshop_id = $workshop->id;
+                        $material->file_path = $path;
+                        $material->name = $file->getClientOriginalName();
+                        $material->active = 1;
+                        $material->save();
+
+                    }
+                }
+
             return response()->json(['message' => 'Taller creada correctamente', 'data' => $workshop ], 200);
         }
 
@@ -97,6 +120,33 @@ class WorkshopsController extends Controller
 
 
         if($workshop->save()){
+
+            $materials = $request->input('materials');
+            $new_materials = $request->file('new_materials');
+            $array_ids = [];
+            if ($new_materials) {
+                foreach ($new_materials as $file) {
+                    if(is_file($file)){
+                    
+                        $path = UploadServer::uploadFile($file, 'workshop/'.$workshop->id.'/materials');
+
+                        $material = new Materials();
+                        $material->workshop_id = $workshop->id;
+                        $material->file_path = $path;
+                        $material->name = $file->getClientOriginalName();
+                        $material->active = 1;
+                        $material->save();
+                        $array_ids[] = $material->id;                           
+                    }
+                }
+            }
+            if($materials){
+                foreach($materials as $material){
+                    $array_ids[] = $material['id'];
+                }
+            }
+            Materials::where('workshop_id',$workshop_id)->whereNotIn('id',$array_ids)->delete();
+            $workshop = Workshops::with('materials')->where('id',$workshop_id)->first();
             return response()->json(['message' => 'Taller actualizado correctamente', 'data' => $workshop ], 200);
         }
 
@@ -137,7 +187,7 @@ class WorkshopsController extends Controller
     public function getWorkshop(Request $request,$workshop_id)
     {
         $data = $request->all();
-        $workshop = Workshops::find($workshop_id);   
+        $workshop = Workshops::with(['materials'])->find($workshop_id);   
         
         if(!$workshop){
             return response()->json(['error' => 'Taller no encontrada'], 404);

@@ -33,7 +33,7 @@ Route::get('/professors', [UserController::class,'getProfessors']);
 Route::get('/home/courses', [CoursesController::class,'listAllCourses']);
 
 #get file from storage
-Route::get('/materials/{lesson_id}/{checksum}',[FileController::class,'downloadFile']);
+Route::get('/{lessonOrWorkshop}/materials/{id}/{checksum}',[FileController::class,'downloadFile']);
 Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
 
 
@@ -109,7 +109,7 @@ Route::group(['prefix' => 'admin'], function () {
     #create route group for workshops
     Route::group(['prefix' => 'workshops'], function () {
         Route::post('/', [WorkshopsController::class,'create']);
-        Route::patch('/{workshop_id}', [WorkshopsController::class,'update']);
+        Route::post('/{workshop_id}', [WorkshopsController::class,'update']);
         Route::delete('/{workshop_id}', [WorkshopsController::class,'delete']);
 
         Route::get('/{workshop_id}', [WorkshopsController::class,'getWorkshop']);
