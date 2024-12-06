@@ -15,6 +15,7 @@ use App\Models\Categories;
 Route::post('/login', [AuthController::class,'login']);
 Route::post('/register', [AuthController::class,'register']);
 Route::post('/register/verify', [AuthController::class,'verifyEmail']);
+Route::post('/register/resend', [AuthController::class,'resendEmail']);
 Route::post('/login/{provider}', [AuthController::class,'loginSocial']);
 Route::post('/requestResetPassword', [AuthController::class,'requestResetPassword']);
 Route::post('/resetPassword', [AuthController::class,'resetPassword']);

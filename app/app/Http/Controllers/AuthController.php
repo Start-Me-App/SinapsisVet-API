@@ -368,4 +368,35 @@ class Authcontroller extends Controller
         return response()->json(['msg' => 'Contraseña actualizada correctamente'], 200);
     }
 
+
+    
+    /**
+     * resend email
+     *
+     * @return JsonResponse
+     */
+    public function resendEmail(Request $request)
+    {
+        $params = $request->only('email');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $params['email'])->first();
+
+        if(!$user){
+            return response()->json(['error' => 'Email no registrado'], 400);
+        }
+
+        Emailing::verifyEmail($user);
+       
+        return response()->json(['msg' => 'Email reenviado'], 200);
+    }
+
 }
