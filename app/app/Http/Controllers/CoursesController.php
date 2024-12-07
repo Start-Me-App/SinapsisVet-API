@@ -179,9 +179,8 @@ class CoursesController extends Controller
         if(!$course){
             return response()->json(['error' => 'Curso no encontrado'], 404);
         }
-        $course->active = 0;
 
-        if($course->save()){
+        if($course->delete()){
             return response()->json(['message' => 'Curso eliminado correctamente'], 200);
         }   
         return response()->json(['error' => 'Error al eliminar el curso'], 500);
