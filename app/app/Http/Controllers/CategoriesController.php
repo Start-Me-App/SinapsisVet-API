@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Categories, Countries};
+use App\Models\{Categories, Countries, Courses};
 
 use Illuminate\Support\Facades\DB;
 
@@ -95,9 +95,15 @@ class CategoriesController extends Controller
         $category = Categories::find($category_id);
 
         if(!$category){
-            return response()->json(['error' => 'Categoria no encontrada'], 400);
+            return response()->json(['error' => 'Categoria no encontrada'], 500);
         }
 
+
+        $course = Courses::where('category_id',$category_id)->first();
+
+        if($course){
+            return response()->json(['error' => 'La categoria pertenece a un curso acitvo'], 500);
+        }
        
         $category->delete();
 

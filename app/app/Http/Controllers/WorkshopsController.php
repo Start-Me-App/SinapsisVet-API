@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use App\Support\TokenManager;
 
 use App\Support\UploadServer;
+use Illuminate\Queue\Worker;
+
 use function PHPSTORM_META\map;
 
 class WorkshopsController extends Controller
@@ -77,8 +79,9 @@ class WorkshopsController extends Controller
 
                     }
                 }
+            $workshop_aux = Workshops::with(['materials'])->where('id',$workshop->id)->first();    
 
-            return response()->json(['message' => 'Taller creada correctamente', 'data' => $workshop ], 200);
+            return response()->json(['message' => 'Taller creada correctamente', 'data' => $workshop_aux ], 200);
         }
 
         return response()->json(['error' => 'Error al crear la Taller'], 500);
@@ -166,12 +169,11 @@ class WorkshopsController extends Controller
         $workshop = Workshops::find($workshop_id);   
         
         if(!$workshop){
-            return response()->json(['error' => 'Taller no encontrada'], 404);
+            return response()->json(['error' => 'Taller no encontrado'], 404);
         }
-        $workshop->active = 0;
 
-        if($workshop->save()){
-            return response()->json(['message' => 'Taller eliminada correctamente'], 200);
+        if($workshop->delete()){
+            return response()->json(['message' => 'Taller eliminado correctamente'], 200);
         }   
         return response()->json(['error' => 'Error al eliminar la Taller'], 500);
     }
