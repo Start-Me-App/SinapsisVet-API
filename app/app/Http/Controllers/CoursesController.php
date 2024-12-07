@@ -256,7 +256,7 @@ class CoursesController extends Controller
     public function getWorkshopsByCourse(Request $request,$course_id)
     {   
 
-        $list = Workshops::where('course_id',$course_id)->get();
+        $list = Workshops::with(['materials'])->where('course_id',$course_id)->get();
       
         return response()->json(['data' => $list], 200);
     }
