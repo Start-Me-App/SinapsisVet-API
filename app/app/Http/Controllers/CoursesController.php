@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Lessons, User, Workshops,Exams};
+use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse};
 
 use Illuminate\Support\Facades\DB;
 
@@ -25,12 +25,11 @@ class CoursesController extends Controller
      */
     public function create(Request $request)
     {
-        #TODO -> cambiar photo_url por photo y recibe un file
+
         $data = $request->all();        
         $validator = validator($data, [
             'title' => 'required',
             'description' => 'required',
-            'profesor_id' => 'required',
             'price_ars' => 'required',
             'price_usd' => 'required',
             'active' => 'required|integer',
@@ -39,19 +38,15 @@ class CoursesController extends Controller
             'starting_date' => 'required',
             'inscription_date' => 'required',
             'objective' => 'required',
-            'presentation' => 'required'
+            'presentation' => 'required',
+            'professors' => 'required'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        #validate if profesor_id is a valid user
-        $profesor = User::where('id',$data['profesor_id'])->where('role_id',2)->first();
-        
-        if(!$profesor){
-            return response()->json(['error' => 'Profesor no encontrado'], 409);
-        }
+      
 
 
         #validate if course already exists
@@ -68,11 +63,17 @@ class CoursesController extends Controller
             return response()->json(['error' => 'Error al subir la imagen'], 500);
         } 
 
+        if(count($data['professors']) == 0){
+            return response()->json(['error' => 'Debe haber al menos un profesor'], 409);
+        }
+
+
+
+      
  
         $course = new Courses();
         $course->title = $data['title'];
         $course->description = $data['description'];
-        $course->profesor_id = $data['profesor_id'];
         $course->price_ars = $data['price_ars'];
         $course->price_usd = $data['price_usd'];
         $course->active = $data['active'];
@@ -84,7 +85,24 @@ class CoursesController extends Controller
         $course->presentation = $data['presentation'];
 
         if($course->save()){
-            return response()->json(['message' => 'Curso creado correctamente', 'data' => $course ], 200);
+
+            foreach($data['professors'] as $professor_id){
+                #validate if profesor_id is a valid user
+                $profesor = User::where('id',$professor_id)->   where('role_id',2)->first();
+                if(!$profesor){
+                    return response()->json(['error' => 'Profesor no encontrado'], 409);
+                }
+    
+                $professorByCourse = new ProfessorByCourse();
+                $professorByCourse->course_id = $course->id;
+                $professorByCourse->professor_id = $professor_id;
+                $professorByCourse->save();
+            }
+
+            $course_rta = Courses::with(['directors.professor'])->find($course->id);
+
+            
+            return response()->json(['message' => 'Curso creado correctamente', 'data' => $course_rta ], 200);
         }
 
         return response()->json(['error' => 'Error al crear el curso'], 500);
@@ -106,7 +124,6 @@ class CoursesController extends Controller
         $validator = validator($data, [
             'title' => 'required',
             'description' => 'required',
-            'profesor_id' => 'required',
             'price_ars' => 'required',
             'price_usd' => 'required',
             'active' => 'required|integer',
@@ -114,24 +131,23 @@ class CoursesController extends Controller
             'starting_date' => 'required',
             'inscription_date' => 'required',
             'objective' => 'required',
-            'presentation' => 'required'
+            'presentation' => 'required',
+            'professors' => 'required'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
 
+        if(count($data['professors']) == 0){
+            return response()->json(['error' => 'Debe haber al menos un profesor'], 409);
+        }
+
+
         #validate if course already exists
         $course = Courses::where('id',$course_id)->first();
         if(!$course){
             return response()->json(['error' => 'El curso no existe'], 409);
-        }
-
-        #validate if profesor_id is a valid user
-        $profesor = User::where('id',$data['profesor_id'])->where('role_id',2)->first();
-     
-        if(!$profesor){
-            return response()->json(['error' => 'Profesor no encontrado'], 409);
         }
 
         if(isset($data['photo_file'])){
@@ -147,7 +163,6 @@ class CoursesController extends Controller
   
         $course->title = $data['title'];
         $course->description = $data['description'];
-        $course->profesor_id = $data['profesor_id'];
         $course->price_ars = $data['price_ars'];
         $course->price_usd = $data['price_usd'];
         $course->active = $data['active'];
@@ -156,9 +171,33 @@ class CoursesController extends Controller
         $course->inscription_date = $data['inscription_date'];
         $course->objective = $data['objective'];
         $course->presentation = $data['presentation'];
+
+
+        foreach($data['professors'] as $professor_id){
+            #validate if profesor_id is a valid user
+            $profesor = User::where('id',$professor_id)->where('role_id',2)->first();
+            if(!$profesor){
+                return response()->json(['error' => 'Profesor no encontrado'], 409);
+            }
+
+            #check if professor is already in the course
+            $professorByCourse = ProfessorByCourse::where('course_id',$course_id)->where('professor_id',$professor_id)->first();
+            if(!$professorByCourse){
+                $professorByCourse = new ProfessorByCourse();
+                $professorByCourse->course_id = $course_id;
+                $professorByCourse->professor_id = $professor_id;
+                $professorByCourse->save();
+            }
+        }
+
+        #delete professors that are not in the request
+        $professors = ProfessorByCourse::where('course_id',$course_id)->whereNotIn('professor_id',$data['professors'])->delete();   
         
         if($course->save()){
-            return response()->json(['message' => 'Curso actualizado correctamente', 'data' => $course ], 200);
+
+            $course_rta = Courses::with(['directors.professor'])->find($course->id);
+            
+            return response()->json(['message' => 'Curso actualizado correctamente', 'data' => $course_rta ], 200);
         }
 
         return response()->json(['error' => 'Error al actualizar el curso'], 500);
@@ -181,6 +220,8 @@ class CoursesController extends Controller
         }
 
         if($course->delete()){
+
+            #delete all lessons workshops etc
             return response()->json(['message' => 'Curso eliminado correctamente'], 200);
         }   
         return response()->json(['error' => 'Error al eliminar el curso'], 500);
@@ -198,7 +239,7 @@ class CoursesController extends Controller
 
         $params = $request->all();
       
-        $list = Courses::with(['profesor','category'])->get();
+        $list = Courses::with(['category','directors.professor'])->get();
       
         return response()->json(['data' => $list], 200);
     }
@@ -212,7 +253,7 @@ class CoursesController extends Controller
     public function getCourse(Request $request,$course_id)
     {   
         
-        $list = Courses::with(['profesor','category','lessons.materials','workshops','exams','inscriptions.student'])->find($course_id);
+        $list = Courses::with(['category','directors.professor','lessons.materials','workshops','exams','inscriptions.student'])->find($course_id);
       
         return response()->json(['data' => $list], 200);
     }
@@ -228,7 +269,7 @@ class CoursesController extends Controller
     {   
 
 
-        $list = Lessons::with(['materials'])->where('course_id',$course_id)->get();
+        $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
 
         return response()->json(['data' => $list], 200);
     }
@@ -375,11 +416,11 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Courses::with(['profesor','category'])->get();
+            $list = Courses::with(['category','directors.professor'])->get();
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
     
-            $list = Courses::with(['profesor'])
+            $list = Courses::with(['category','directors.professor'])
              ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
             ->where('courses.active', 1)
@@ -405,7 +446,7 @@ class CoursesController extends Controller
      */
     public function listCourse(Request $request,$course_id)
     {   
-        $list = Courses::with(['profesor','category'])->find($course_id);
+        $list = Courses::with(['category','directors.professor'])->find($course_id);
       
         return response()->json(['data' => $list], 200);
 
@@ -426,7 +467,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Lessons::with(['materials'])->where('course_id',$course_id)->get();
+            $list = Lessons::with(['materials','directors.professor'])->where('course_id',$course_id)->get();
             foreach($list as $lesson){
                 $lesson->video_url = null;
                 foreach ($lesson->materials as $m) {
@@ -438,7 +479,7 @@ class CoursesController extends Controller
             $user = TokenManager::getUserFromToken($accessToken);
             $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();
             if(!$inscription){
-                $list = Lessons::with(['materials'])->where('course_id',$course_id)->get();
+                $list = Lessons::with(['materials','directors.professor'])->where('course_id',$course_id)->get();
                 foreach($list as $lesson){
                     $lesson->video_url = null;
                     foreach ($lesson->materials as $m) {
@@ -449,7 +490,7 @@ class CoursesController extends Controller
                 return response()->json(['data' => $list], 200);
             }
           
-            $list = Lessons::with(['materials'])
+            $list = Lessons::with(['materials','directors.professor'])
             ->leftJoin('view_lesson', function($join) use ($user) {
                 $join->on('lessons.id', '=', 'view_lesson.lesson_id')
                     ->where('view_lesson.user_id', '=', $user->id);

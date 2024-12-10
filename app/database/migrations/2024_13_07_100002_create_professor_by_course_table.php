@@ -11,16 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lessons', function (Blueprint $table) {
+        Schema::create('professor_by_course', function (Blueprint $table) {
             $table->id();
             $table->integer('course_id');
-            $table->string('name');
-            $table->string('video_url')->nullable();
-            $table->longText('description');
-            $table->integer('active');
             $table->integer('professor_id');
-
-            $table->date('date')->nullable();
 
             #$table->foreign('course_id')->references('id')->on('courses');
         });
@@ -31,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('lessons');
+        Schema::dropIfExists('professor_by_course');
     }
 };

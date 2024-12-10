@@ -37,14 +37,14 @@ class DatabaseSeeder extends Seeder
         ]);
 
         DB::table('courses')->insert([
-            ['title' => 'Curso 1', 'description' => 'Curso 1', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'profesor_id' => 2, 'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 1', 'presentation' => 'Curso 1'],
-            ['title' => 'Curso 2', 'description' => 'Curso 2', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'profesor_id' => 2, 'category_id' => 2, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 2', 'presentation' => 'Curso 2'],
-            ['title' => 'Curso 3', 'description' => 'Curso 3', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'profesor_id' => 2,'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 3', 'presentation' => 'Curso 3']]);
+            ['title' => 'Curso 1', 'description' => 'Curso 1', 'active' => 1,'price_ars' => 100,'price_usd' => 100, 'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 1', 'presentation' => 'Curso 1'],
+            ['title' => 'Curso 2', 'description' => 'Curso 2', 'active' => 1,'price_ars' => 100,'price_usd' => 100, 'category_id' => 2, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 2', 'presentation' => 'Curso 2'],
+            ['title' => 'Curso 3', 'description' => 'Curso 3', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 3', 'presentation' => 'Curso 3']]);
 
         DB::table('lessons')->insert([
-            ['name' => 'Leccion 1', 'description' => 'Leccion 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123'],
-            ['name' => 'Leccion 2', 'description' => 'Leccion 2', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123'],
-            ['name' => 'Leccion 2-1', 'description' => 'Leccion 2-1', 'active' => 1, 'course_id' => 2, 'video_url' => 'https:123123']]);
+            ['name' => 'Leccion 1', 'description' => 'Leccion 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123', 'professor_id' => 2],
+            ['name' => 'Leccion 2', 'description' => 'Leccion 2', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123', 'professor_id' => 2],
+            ['name' => 'Leccion 2-1', 'description' => 'Leccion 2-1', 'active' => 1, 'course_id' => 2, 'video_url' => 'https:123123', 'professor_id' => 2]]);
 
         DB::table('workshops')->insert([
             ['name' => 'Taller 1', 'description' => 'Taller 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123'],

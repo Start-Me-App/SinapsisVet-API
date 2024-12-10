@@ -34,7 +34,7 @@ class LessonsController extends Controller
             'name' => 'required',
             'description' => 'required',
             'active' => 'required|integer',
-            'video_url' => 'required'
+            'professor_id' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -54,8 +54,13 @@ class LessonsController extends Controller
         $lesson->name = $data['name'];
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
-        $lesson->video_url = $data['video_url'];
-
+        $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+        $lesson->date = $data['date'];
+        $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
+        if(!$profesor){
+            return response()->json(['error' => 'Profesor no encontrado'], 409);
+        }
+        $lesson->professor_id = $profesor->id;
 
         if($lesson->save()){
 
@@ -79,7 +84,7 @@ class LessonsController extends Controller
                 }
             
 
-            $lesson = Lessons::with('materials')->where('id',$lesson->id)->first();
+            $lesson = Lessons::with('materials','professor')->where('id',$lesson->id)->first();
 
             return response()->json(['message' => 'Leccion creada correctamente', 'data' => $lesson ], 200);
         }
@@ -103,7 +108,7 @@ class LessonsController extends Controller
             'name' => 'required',
             'description' => 'required',
             'active' => 'required|integer',
-            'video_url' => 'required'
+            'professor_id' => 'required'
         ]);
 
 
@@ -120,7 +125,13 @@ class LessonsController extends Controller
         $lesson->name = $data['name'];
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
-        $lesson->video_url = $data['video_url'];
+        $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+        $lesson->date = $data['date'];
+        $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
+        if(!$profesor){
+            return response()->json(['error' => 'Profesor no encontrado'], 409);
+        }
+        $lesson->professor_id = $profesor->id;
 
 
         if($lesson->save()){
@@ -150,7 +161,7 @@ class LessonsController extends Controller
                     }
                 }
                 Materials::where('lesson_id',$lesson_id)->whereNotIn('id',$array_ids)->delete();
-                $lesson = Lessons::with('materials')->where('id',$lesson_id)->first();
+                $lesson = Lessons::with('materials','professor')->where('id',$lesson_id)->first();
                 return response()->json(['message' => 'Leccion actualizada correctamente', 'data' => $lesson ], 200);
         }
 
@@ -210,7 +221,7 @@ class LessonsController extends Controller
     public function getLesson(Request $request,$lesson_id)
     {
         $data = $request->all();
-        $lesson = Lessons::with('materials')->find($lesson_id);           
+        $lesson = Lessons::with('materials','professor')->find($lesson_id);           
         
         if(!$lesson){
             return response()->json(['error' => 'Leccion no encontrada'], 404);

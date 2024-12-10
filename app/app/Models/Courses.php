@@ -57,9 +57,9 @@ class Courses extends Model
     }
    
 
-    public function profesor()
+    public function directors()
     {
-        return $this->hasOne(User::class, 'id', 'profesor_id');
+        return $this->hasMany(ProfessorByCourse::class, 'course_id', 'id');
     }
 
     public function category()
