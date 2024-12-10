@@ -57,9 +57,10 @@ class Courses extends Model
     }
    
 
+
     public function professors()
     {
-        return $this->hasMany(ProfessorByCourse::class, 'course_id', 'id');
+        return $this->belongsToMany(User::class, 'professor_by_course', 'course_id', 'professor_id');
     }
 
     public function category()
