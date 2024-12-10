@@ -86,7 +86,7 @@ class LessonsController extends Controller
                 }catch(\Exception $e){
                     #rollback lesson
                     $lesson->delete();
-                    return response()->json(['error' => 'Error al subir los materiales'], 500);
+                    return response()->json(['error' => 'Error al subir los materiales', 'data' => $e->getMessage()], 500);
                 }
             
 
@@ -159,7 +159,7 @@ class LessonsController extends Controller
                         }
                    }catch(\Exception $e){
                         $lesson->delete();
-                        return response()->json(['error' => 'Error al subir los materiales'], 500);
+                        return response()->json(['error' => 'Error al subir los materiales', 'data' => $e->getMessage()], 500);
                    }
                 }
                 if($materials){
