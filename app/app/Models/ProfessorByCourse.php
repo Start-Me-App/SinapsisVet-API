@@ -33,7 +33,7 @@ class ProfessorByCourse extends Model
     ];
 
     #hide professor_id
-    protected $hidden = ['professor_id'];
+    protected $hidden = ['professor_id','course_id','id'];
 
 
     public function professor()

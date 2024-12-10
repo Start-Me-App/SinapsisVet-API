@@ -68,8 +68,9 @@ class LessonsController extends Controller
                 // Retrieve all files from 'materials' input field
                 $materials = $request->file('materials');
                
-                if ($materials && is_array($materials)) {
-                    foreach ($materials as $file) {
+                try{
+                    if ($materials && is_array($materials)) {
+                        foreach ($materials as $file) {
                     
                         $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
 
@@ -80,7 +81,12 @@ class LessonsController extends Controller
                         $material->active = 1;
                         $material->save();
 
+                        }
                     }
+                }catch(\Exception $e){
+                    #rollback lesson
+                    $lesson->delete();
+                    return response()->json(['error' => 'Error al subir los materiales'], 500);
                 }
             
 
@@ -140,20 +146,21 @@ class LessonsController extends Controller
                 $new_materials = $request->file('new_materials');
                 $array_ids = [];
                 if ($new_materials) {
-                    foreach ($new_materials as $file) {
-                        if(is_file($file)){
-                        
-                            $path = UploadServer::uploadFile($file, 'lessons/'.$lesson->id.'/materials');
-    
+                   
+                   try{
+                        foreach ($new_materials as $file) {
+                            $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
                             $material = new Materials();
                             $material->lesson_id = $lesson->id;
                             $material->file_path = $path;
                             $material->name = $file->getClientOriginalName();
                             $material->active = 1;
                             $material->save();
-                            $array_ids[] = $material->id;                           
                         }
-                    }
+                   }catch(\Exception $e){
+                        $lesson->delete();
+                        return response()->json(['error' => 'Error al subir los materiales'], 500);
+                   }
                 }
                 if($materials){
                     foreach($materials as $material){
