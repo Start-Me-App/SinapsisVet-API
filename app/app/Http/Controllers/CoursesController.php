@@ -466,7 +466,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Lessons::with(['materials','professors'])->where('course_id',$course_id)->get();
+            $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
             foreach($list as $lesson){
                 $lesson->video_url = null;
                 foreach ($lesson->materials as $m) {
@@ -478,7 +478,7 @@ class CoursesController extends Controller
             $user = TokenManager::getUserFromToken($accessToken);
             $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();
             if(!$inscription){
-                $list = Lessons::with(['materials','professors'])->where('course_id',$course_id)->get();
+                $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
                 foreach($list as $lesson){
                     $lesson->video_url = null;
                     foreach ($lesson->materials as $m) {
@@ -489,7 +489,7 @@ class CoursesController extends Controller
                 return response()->json(['data' => $list], 200);
             }
           
-            $list = Lessons::with(['materials','professors'])
+            $list = Lessons::with(['materials','professor'])
             ->leftJoin('view_lesson', function($join) use ($user) {
                 $join->on('lessons.id', '=', 'view_lesson.lesson_id')
                     ->where('view_lesson.user_id', '=', $user->id);
