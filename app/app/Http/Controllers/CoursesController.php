@@ -489,7 +489,7 @@ class CoursesController extends Controller
                 return response()->json(['data' => $list], 200);
             }
           
-            $list = Lessons::with(['materials','professor'])
+            $list = Lessons::with(['materials','professor','exam'])
             ->leftJoin('view_lesson', function($join) use ($user) {
                 $join->on('lessons.id', '=', 'view_lesson.lesson_id')
                     ->where('view_lesson.user_id', '=', $user->id);
@@ -524,7 +524,20 @@ class CoursesController extends Controller
             $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();            
             if(!$inscription){
                 $list = Exams::where('course_id',$course_id)->where('active',1)->get();
+                $lessons = Lessons::where('course_id',$course_id)->get();
+                $lessons_ids = [];
+                foreach($lessons as $lesson){
+                    $lessons_ids[] = $lesson->id;
+                }
+                $list_2 = Exams::whereIn('lesson_id',$lessons_ids)->where('active',1)->get();
+
+                #merge lists
+                $aux = array_merge($list,$list_2);
+                $list = $aux;
+                
+                return response()->json(['data' => $list], 200);
             }
+
 
             $list = Exams::leftJoin('exams_results', function($join) use ($user) {
                 $join->on('exams.id', '=', 'exams_results.exam_id')
@@ -532,6 +545,24 @@ class CoursesController extends Controller
             })
             ->select('exams.*', DB::raw('CASE WHEN exams_results.final_grade > 6 THEN 1 ELSE 0 END as approved'))
             ->where('course_id', $course_id)->where('active',1)->get();
+
+            $lessons = Lessons::where('course_id',$course_id)->get();
+            $lessons_ids = [];
+            foreach($lessons as $lesson){
+                $lessons_ids[] = $lesson->id;
+            }
+            
+            $list_2 = Exams::leftJoin('exams_results', function($join) use ($user) {
+                $join->on('exams.id', '=', 'exams_results.exam_id')
+                    ->where('exams_results.user_id', '=', $user->id);
+            })
+            ->select('exams.*', DB::raw('CASE WHEN exams_results.final_grade > 6 THEN 1 ELSE 0 END as approved'))
+            ->whereIn('lesson_id',$lessons_ids)->where('active',1)->get();
+
+            #merge lists
+            $aux = array_merge($list->toArray(), $list_2->toArray());
+            $list = collect($aux);
+
         }
 
         return response()->json(['data' => $list], 200);

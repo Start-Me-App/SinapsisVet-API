@@ -51,4 +51,8 @@ class Lessons extends Model
         return $this->hasOne(User::class, 'id', 'professor_id');
     }
 
+    public function exam()
+    {
+        return $this->hasOne(Exams::class, 'lesson_id', 'id');
+    }
 }
