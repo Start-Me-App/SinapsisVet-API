@@ -21,7 +21,7 @@ Route::post('/requestResetPassword', [AuthController::class,'requestResetPasswor
 Route::post('/resetPassword', [AuthController::class,'resetPassword']);
 
 
-Route::patch('/user', [UserController::class,'update']);
+Route::post('/user', [UserController::class,'update']);
 Route::delete('/user/{user_id}', [UserController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 Route::get('/user/list', [UserController::class,'listUsers'])->middleware(ControlAccessMiddleware::class.':admin');
 Route::get('/user', [AuthController::class,'getUser']);

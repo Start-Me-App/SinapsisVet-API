@@ -128,7 +128,11 @@ class User extends Authenticatable
     {
         return $this->sex;
     }
-        
+
+    public function getCvPathAttribute()
+    {
+        return env('STATIC_URL') . $this->attributes['cv_path'];
+    }
 
 
 

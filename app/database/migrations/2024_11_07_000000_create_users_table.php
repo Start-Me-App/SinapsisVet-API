@@ -31,6 +31,7 @@ return new class extends Migration
             $table->boolean('tyc')->default(0);
             $table->string('nationality_id')->nullable();
             $table->string('sex')->nullable();
+            $table->string('cv_path')->nullable();
 
         });
     }

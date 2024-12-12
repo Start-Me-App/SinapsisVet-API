@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
 use App\Models\User;
-
+use App\Support\UploadServer;
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
@@ -70,6 +70,11 @@ class UserController extends Controller
         $userData->area_code = $data['area_code'];
         $userData->nationality_id = $data['nationality_id'];   
         $userData->sex = $data['gender']; 
+        if(isset($data['cv_file'])){
+
+            $cv_path = UploadServer::uploadFile($data['cv_file'],'cvs');
+            $userData->cv_path = $cv_path;
+        }
 
 
         
