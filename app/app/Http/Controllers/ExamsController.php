@@ -53,7 +53,7 @@ class ExamsController extends Controller
 
              #validate if course has a exam
              if(!isset($data['lesson_id'])){
-                 $exam = Exams::where('course_id',$course_id)->first();
+                 $exam = Exams::where('course_id',$course_id)->where('lesson_id',null)->first();
                  if($exam){
                      return response()->json(['error' => 'El curso ya tiene un examen'], 409);
                  }
@@ -127,7 +127,7 @@ class ExamsController extends Controller
 
         if(isset($data['course_id'])){
             #validate if course exists
-            $course = Courses::where('id',$data['course_id'])->first();
+            $course = Courses::where('id',$data['course_id'])->where('lesson_id',null)->first();
             $course_id= $course->id;
             if(!$course){
                 return response()->json(['error' => 'El curso no existe'], 409);
