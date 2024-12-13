@@ -76,6 +76,14 @@ class UserController extends Controller
             $userData->cv_path = $cv_path;
         }
 
+        if(isset($data['photo_file'])){
+            $photo_path = UploadServer::uploadFile($data['photo_file'],'photos');
+            $userData->photo_path = $photo_path;
+        }
+
+        if(isset($data['description'])){
+            $userData->description = $data['description'];
+        }
 
         
         if($user->role->id == 1){
@@ -192,5 +200,88 @@ class UserController extends Controller
   
 
         return response()->json(['data' => $list], 200);
+    }
+
+
+    #create professor
+    public function createProfessor(Request $request){
+
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user        = TokenManager::getUserFromToken($accessToken);
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if($user->role->id != 1){
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = $request->all();
+
+        $validator = validator($data, [
+            'email' => 'required|email',
+            'password' => 'required|min:6',
+            'name' => 'required',
+            'lastname' => 'required',
+            'telephone' => 'required',
+            'area_code' => 'required',
+            'nationality_id' => 'required',
+            'gender' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        #validate email
+        $user = User::where('email',$data['email'])->first();
+        if($user){
+            return response()->json(['error' => 'El email ya existe'], 400);
+        }
+
+        if(isset($data['cv_file'])){
+
+            $cv_path = UploadServer::uploadFile($data['cv_file'],'cvs');
+            $data['cv_path'] = $cv_path;
+        }
+
+        if(isset($data['profile_photo'])){
+            $photo_path = UploadServer::uploadFile($data['profile_photo'],'photos');
+            $data['photo_path'] = $photo_path;
+        }
+
+        if(isset($data['description'])){
+            $data['description'] = $data['description'];
+        }
+        $userCreated = User::firstOrCreate(
+            [
+                'email' => $data['email'],
+                'password' => md5($data['password']),
+                'dob' => isset($data['dob']) ? $data['dob'] : null,
+                'name' => $data['name'],
+                'role_id' => 3,
+                'lastname' => $data['lastname'],
+                'telephone' => $data['telephone'],
+                'area_code' => $data['area_code'],
+                'tyc' => 1,
+                'nationality_id' => $data['nationality_id'],
+                'sex'   => $data['gender'],
+                'cv_path' => $data['cv_path'],
+                'photo_path' => $data['photo_path'],
+                'description' => $data['description'],
+                'email_verified_at' => date('Y-m-d H:i:s'),
+            ],
+            [
+                'email_verified_at' => date('Y-m-d H:i:s'),
+                'created_at' => date('Y-m-d H:i:s')
+            ]
+        );
+        
+        #get user data from database    
+        $userCreated = User::with(['role'])->where('email', $data['email'])->first();
+
+        return response()->json(['message' => 'Profesor creado correctamente', 'data' => $userCreated], 200); 
+
     }
 }

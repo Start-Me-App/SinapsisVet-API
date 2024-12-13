@@ -41,7 +41,11 @@ class User extends Authenticatable
         'area_code',
         'tyc',
         'nationality_id',
-        'sex'
+        'sex',
+        'cv_path',
+        'photo_path',
+        'description',
+        'email_verified_at'
 
     ];
 
@@ -134,6 +138,10 @@ class User extends Authenticatable
         return env('STATIC_URL') . $this->attributes['cv_path'];
     }
 
+    public function getPhotoPathAttribute()
+    {
+        return env('STATIC_URL') . $this->attributes['photo_path'];
+    }
 
 
 

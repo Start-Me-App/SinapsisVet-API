@@ -19,11 +19,11 @@ class DatabaseSeeder extends Seeder
             [ 'name' => 'Alumno' ]]);  
     
         DB::table('users')->insert([
-            ['name' => 'Admin', 'lastname' => 'Admin', 'email' => 'admin@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 1,'active' => 1],
-            ['name' => 'Profesor', 'lastname' => 'Profesor', 'email' => 'profe@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1],
-            ['name' => 'Alumno', 'lastname' => 'Alumno', 'email' => 'alumno@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 3,'active' => 1],
-            ['name' => 'Fernando', 'lastname' => 'Pellegrino', 'email' => 'fpellegrino@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1],
-            ['name' => 'Javier', 'lastname' => 'Ochoa', 'email' => 'jochoa@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1],
+            ['name' => 'Admin', 'lastname' => 'Admin', 'email' => 'admin@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 1,'active' => 1,'nationality_id' => 1],
+            ['name' => 'Profesor', 'lastname' => 'Profesor', 'email' => 'profe@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1,'nationality_id' => 1],
+            ['name' => 'Alumno', 'lastname' => 'Alumno', 'email' => 'alumno@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 3,'active' => 1,'nationality_id' => 1],
+            ['name' => 'Fernando', 'lastname' => 'Pellegrino', 'email' => 'fpellegrino@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1,'nationality_id' => 1],
+            ['name' => 'Javier', 'lastname' => 'Ochoa', 'email' => 'jochoa@gmail.com','email_verified_at' => now(), 'password' => md5('12345678'), 'role_id' => 2,'active' => 1,'nationality_id' => 1],
         ]);  
          
         DB::table('module')->insert([
@@ -41,10 +41,17 @@ class DatabaseSeeder extends Seeder
             ['title' => 'Curso 2', 'description' => 'Curso 2', 'active' => 1,'price_ars' => 100,'price_usd' => 100, 'category_id' => 2, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 2', 'presentation' => 'Curso 2'],
             ['title' => 'Curso 3', 'description' => 'Curso 3', 'active' => 1,'price_ars' => 100,'price_usd' => 100,'category_id' => 1, 'photo_url' => 'asd', 'starting_date' => '2021-01-01', 'inscription_date' => '2021-01-01', 'objective' => 'Curso 3', 'presentation' => 'Curso 3']]);
 
+
+        DB::table('professor_by_course')->insert([
+            ['course_id' => 1, 'professor_id' => 2],
+            ['course_id' => 2, 'professor_id' => 2],
+            ['course_id' => 3, 'professor_id' => 2]
+        ]);
+
         DB::table('lessons')->insert([
-            ['name' => 'Leccion 1', 'description' => 'Leccion 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123', 'professor_id' => 2],
-            ['name' => 'Leccion 2', 'description' => 'Leccion 2', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123', 'professor_id' => 2],
-            ['name' => 'Leccion 2-1', 'description' => 'Leccion 2-1', 'active' => 1, 'course_id' => 2, 'video_url' => 'https:123123', 'professor_id' => 2]]);
+            ['name' => 'Leccion 1', 'description' => 'Leccion 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123', 'professor_id' => 2,'date' => '2021-01-01'],
+            ['name' => 'Leccion 2', 'description' => 'Leccion 2', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123', 'professor_id' => 2,'date' => '2021-01-01'],
+            ['name' => 'Leccion 2-1', 'description' => 'Leccion 2-1', 'active' => 1, 'course_id' => 2, 'video_url' => 'https:123123', 'professor_id' => 2,'date' => '2021-01-01']]);
 
         DB::table('workshops')->insert([
             ['name' => 'Taller 1', 'description' => 'Taller 1', 'active' => 1, 'course_id' => 1, 'video_url' => 'https:123123'],

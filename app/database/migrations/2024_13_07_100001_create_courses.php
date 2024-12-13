@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->float('price_ars');
-            $table->float('price_usd');
+            $table->float('price_ars', 16, 2);
+            $table->float('price_usd', 16, 2);
             $table->longText('description');
             $table->longText('presentation');
             $table->longText('objective');

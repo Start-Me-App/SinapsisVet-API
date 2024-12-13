@@ -25,7 +25,7 @@ Route::post('/user', [UserController::class,'update']);
 Route::delete('/user/{user_id}', [UserController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 Route::get('/user/list', [UserController::class,'listUsers'])->middleware(ControlAccessMiddleware::class.':admin');
 Route::get('/user', [AuthController::class,'getUser']);
-
+Route::post('/professor', [UserController::class,'createProfessor']);
 
 Route::get('/countries', [CountriesController::class,'getAll']);
 Route::get('/categories', [CategoriesController::class,'getAll']);

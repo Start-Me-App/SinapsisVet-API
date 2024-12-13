@@ -32,6 +32,8 @@ return new class extends Migration
             $table->string('nationality_id')->nullable();
             $table->string('sex')->nullable();
             $table->string('cv_path')->nullable();
+            $table->string('photo_path')->nullable();
+            $table->longText('description')->nullable();
 
         });
     }

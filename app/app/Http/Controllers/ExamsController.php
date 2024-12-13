@@ -52,10 +52,12 @@ class ExamsController extends Controller
             }
 
              #validate if course has a exam
-            $exam = Exams::where('course_id',$course_id)->first();
-            if($exam){
-                return response()->json(['error' => 'El curso ya tiene un examen'], 409);
-            }
+             if(!isset($data['lesson_id'])){
+                 $exam = Exams::where('course_id',$course_id)->first();
+                 if($exam){
+                     return response()->json(['error' => 'El curso ya tiene un examen'], 409);
+                 }
+             }
 
         }else{
             $course_id = null;
@@ -69,7 +71,7 @@ class ExamsController extends Controller
                 return response()->json(['error' => 'La leccion no existe'], 409);
             }
 
-            #validate if lesson has a exam
+            
             $exam = Exams::where('lesson_id',$lesson_id)->first();
             if($exam){
                 return response()->json(['error' => 'La leccion ya tiene un examen'], 409);

@@ -415,7 +415,17 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Courses::with(['category','professors'])->get();
+            $list = Courses::with(['category','professors','lessons','workshops'])->get();
+            foreach($list as $course){
+                foreach ($course->lessons as $lesson) {
+                    $lesson->video_url = null;
+                    unset($lesson->materials);
+                }
+                foreach ($course->workshops as $workshop) {
+                    $workshop->video_url = null;
+                    unset($workshop->materials);
+                }
+            }
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
     
@@ -524,16 +534,6 @@ class CoursesController extends Controller
             $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();            
             if(!$inscription){
                 $list = Exams::where('course_id',$course_id)->where('active',1)->get();
-                $lessons = Lessons::where('course_id',$course_id)->get();
-                $lessons_ids = [];
-                foreach($lessons as $lesson){
-                    $lessons_ids[] = $lesson->id;
-                }
-                $list_2 = Exams::whereIn('lesson_id',$lessons_ids)->where('active',1)->get();
-
-                #merge lists
-                $aux = array_merge($list,$list_2);
-                $list = $aux;
                 
                 return response()->json(['data' => $list], 200);
             }
@@ -546,7 +546,7 @@ class CoursesController extends Controller
             ->select('exams.*', DB::raw('CASE WHEN exams_results.final_grade > 6 THEN 1 ELSE 0 END as approved'))
             ->where('course_id', $course_id)->where('active',1)->get();
 
-            $lessons = Lessons::where('course_id',$course_id)->get();
+          /*   $lessons = Lessons::where('course_id',$course_id)->get();
             $lessons_ids = [];
             foreach($lessons as $lesson){
                 $lessons_ids[] = $lesson->id;
@@ -561,7 +561,7 @@ class CoursesController extends Controller
 
             #merge lists
             $aux = array_merge($list->toArray(), $list_2->toArray());
-            $list = collect($aux);
+            $list = collect($aux); */
 
         }
 
