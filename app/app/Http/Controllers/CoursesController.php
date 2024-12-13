@@ -429,7 +429,7 @@ class CoursesController extends Controller
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
     
-            $list = Courses::with(['category','professors'])
+            $list = Courses::with(['category','professors','lessons','workshops'])
              ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
             ->where('courses.active', 1)
@@ -438,7 +438,21 @@ class CoursesController extends Controller
                     ->orWhereNull('inscriptions.user_id');
             })
             ->get();
+
+            foreach($list as $course){
+                if(!$course->inscribed){
+                    foreach ($course->lessons as $lesson) {
+                        $lesson->video_url = null;
+                        unset($lesson->materials);
+                    }
+                    foreach ($course->workshops as $workshop) {
+                        $workshop->video_url = null;
+                            unset($workshop->materials);
+                        }
+                    }
+            }
         }
+
 
 
     
