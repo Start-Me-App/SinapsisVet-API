@@ -61,4 +61,9 @@ class UploadServer
 
         return null; // O puedes lanzar una excepción si prefieres manejarlo así
     }
+
+    public static function validateImage(UploadedFile $image): bool
+    {
+        return $image->getClientMimeType() === 'image/jpeg' || $image->getClientMimeType() === 'image/png' || $image->getClientMimeType() === 'image/jpg';
+    }
 }

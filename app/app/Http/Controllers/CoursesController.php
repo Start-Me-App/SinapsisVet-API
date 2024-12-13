@@ -56,6 +56,10 @@ class CoursesController extends Controller
             return response()->json(['error' => 'Curso ya existe'], 409);
         }
 
+        #validate if photo is a valid image
+        if(!UploadServer::validateImage($data['photo_file'])){
+            return response()->json(['error' => 'El archivo no es una imagen'], 409);
+        }
 
         $upload = UploadServer::uploadImage($data['photo_file'],'images');
         
@@ -67,6 +71,11 @@ class CoursesController extends Controller
             return response()->json(['error' => 'Debe haber al menos un profesor'], 409);
         }
 
+
+        #validate if starting date is greater than inscription date
+        if(strtotime($data['starting_date']) < strtotime($data['inscription_date'])){
+            return response()->json(['error' => 'La fecha de inicio no puede ser menor que la fecha de inscripcion'], 409);
+        }
 
 
       
