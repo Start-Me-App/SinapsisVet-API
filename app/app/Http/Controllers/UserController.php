@@ -260,7 +260,7 @@ class UserController extends Controller
                 'password' => md5($data['password']),
                 'dob' => isset($data['dob']) ? $data['dob'] : null,
                 'name' => $data['name'],
-                'role_id' => 3,
+                'role_id' => 2,
                 'lastname' => $data['lastname'],
                 'telephone' => $data['telephone'],
                 'area_code' => $data['area_code'],
