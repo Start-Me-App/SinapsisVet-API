@@ -146,7 +146,6 @@ class LessonsController extends Controller
                 $new_materials = $request->file('new_materials');
                 $array_ids = [];
                 if ($new_materials) {
-                   
                    try{
                         foreach ($new_materials as $file) {
                             $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
@@ -156,6 +155,7 @@ class LessonsController extends Controller
                             $material->name = $file->getClientOriginalName();
                             $material->active = 1;
                             $material->save();
+                            $array_ids[] = $material->id;
                         }
                    }catch(\Exception $e){
                         $lesson->delete();
