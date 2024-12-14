@@ -190,10 +190,10 @@ class UserController extends Controller
         }
 
         if(isset($params['name'])){
-            $list = User::where('active',$active)->where('role_id',2)->where('name','like','%'.$params['name'].'%')->get();
+            $list = User::with(['nationality','role'])->where('active',$active)->where('role_id',2)->where('name','like','%'.$params['name'].'%')->get();
             return response()->json(['data' => $list], 200);
         }else{
-            $list = User::where('active',$active)->where('role_id',2)->get();
+            $list = User::with(['nationality','role'])->where('active',$active)->where('role_id',2)->get();
         }
 
         

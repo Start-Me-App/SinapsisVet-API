@@ -135,12 +135,24 @@ class ShoppingCartController extends Controller
        
        foreach ($shoppingCart->items as $item) {
 
-            #inscribir al curso
-            $inscripcion = new Inscriptions();
-            $inscripcion->user_id = $user->id;
-            $inscripcion->course_id = $item->course_id;
-            $inscripcion->with_workshop = $item->with_workshop;
-            $inscripcion->save();
+            #check if user is already inscribed
+            $inscripcion = Inscriptions::where('user_id', $user->id)->where('course_id', $item->course_id)->first();
+
+            if($inscripcion){
+                if($inscripcion->with_workshop == 1){
+                    return response()->json(['message' => 'Ya estás inscripto en este curso y taller', 'course_id' => $item->course_id], 500);
+                }else{
+                    $inscripcion->with_workshop = $item->with_workshop;
+                    $inscripcion->save();
+                }
+            }else{
+                #inscribir al curso
+                $inscripcion = new Inscriptions();
+                $inscripcion->user_id = $user->id;
+                $inscripcion->course_id = $item->course_id;
+                $inscripcion->with_workshop = $item->with_workshop;
+                $inscripcion->save();
+            }
        }
 
         #desactivar carrito

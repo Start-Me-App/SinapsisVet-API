@@ -623,7 +623,7 @@ class CoursesController extends Controller
                 return response()->json(['data' => $list], 200);
             }
           
-            $list = Workshops::where('course_id',$course_id)->where('active',1)->get();
+            $list = Workshops::with(['materials'])->where('course_id',$course_id)->where('active',1)->get();
       
             return response()->json(['data' => $list], 200);
         }
