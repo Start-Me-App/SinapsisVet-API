@@ -424,7 +424,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Courses::with(['category','professors','lessons','workshops'])->get();
+            $list = Courses::with(['category','professors','lessons.professor','workshops'])->get();
             foreach($list as $course){
                 foreach ($course->lessons as $lesson) {
                     $lesson->video_url = null;
@@ -438,7 +438,7 @@ class CoursesController extends Controller
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
     
-            $list = Courses::with(['category','professors','lessons','workshops'])
+            $list = Courses::with(['category','professors','lessons.professor','workshops'])
              ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
             ->where('courses.active', 1)
