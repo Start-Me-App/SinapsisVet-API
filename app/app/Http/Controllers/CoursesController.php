@@ -474,9 +474,37 @@ class CoursesController extends Controller
      */
     public function listCourse(Request $request,$course_id)
     {   
-        $list = Courses::with(['category','professors'])->find($course_id);
-      
+        $list = Courses::with(['category','professors','lessons','workshops'])->find($course_id);
+
+        $accessToken = TokenManager::getTokenFromRequest();
+        if(!is_null($accessToken)){
+            $user = TokenManager::getUserFromToken($accessToken);
+            $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();
+            if(!$inscription){
+                foreach ($list->lessons as $lesson) {
+                    $lesson->video_url = null;
+                    unset($lesson->materials);
+                }
+                foreach ($list->workshops as $workshop) {
+                    $workshop->video_url = null;
+                    unset($workshop->materials);
+                }
+            }else{
+            
+                return response()->json(['data' => $list], 200);
+            }
+        }else{
+            foreach ($list->lessons as $lesson) {
+                $lesson->video_url = null;
+                unset($lesson->materials);
+            }
+            foreach ($list->workshops as $workshop) {
+                $workshop->video_url = null;
+                unset($workshop->materials);
+            }
+        }
         return response()->json(['data' => $list], 200);
+      
 
     }
 
