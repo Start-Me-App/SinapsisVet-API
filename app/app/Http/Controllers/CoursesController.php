@@ -439,13 +439,9 @@ class CoursesController extends Controller
             $user = TokenManager::getUserFromToken($accessToken);
     
             $list = Courses::with(['category','professors','lessons.professor','workshops'])
-             ->select('courses.*', 'inscriptions.id as inscribed')
+            ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
             ->where('courses.active', 1)
-            ->where(function($query) use ($user) {
-                $query->where('inscriptions.user_id', $user->id)
-                    ->orWhereNull('inscriptions.user_id');
-            })
             ->get();
 
             foreach($list as $course){
