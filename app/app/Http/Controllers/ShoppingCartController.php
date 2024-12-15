@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions};
+use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops};
 
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +30,12 @@ class ShoppingCartController extends Controller
 
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
+        foreach($shoppingCart->items as $item){
+            #check if course has workshops
+            $workshops = Workshops::where('course_id', $item->course_id)->get();
+            
+            $item->course->workshops = $workshops;
+        }
         if(!$shoppingCart){
             return response()->json(['message' => 'Carrito no encontrado'], 404);
         }
@@ -64,11 +70,18 @@ class ShoppingCartController extends Controller
             return response()->json(['message' => 'Ya estás inscripto en este curso'], 400);
         }
 
+        #check if course has workshops
+        $workshops = Workshops::where('course_id', $request->course_id)->get();
+   
+        if($workshops->count() == 0 && $request->with_workshop == 1){
+            return response()->json(['message' => 'Este curso no tiene talleres'], 400);
+        }
+
         #check if item already exists
         $item = ShoppingCartContent::where('course_id', $request->course_id)->where('shopping_cart_id', $shoppingCart->id)->first();
 
         if($item){
-           $item->with_workshop = $request->with_workshop;
+            $item->with_workshop = $request->with_workshop;
             $item->save();
         }else{
             #add item to shopping cart

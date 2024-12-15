@@ -39,4 +39,6 @@ class ShoppingCartContent extends Model
         return $this->hasOne(Courses::class, 'id', 'course_id');
     }
 
+ 
+
 }
