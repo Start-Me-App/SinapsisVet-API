@@ -437,7 +437,7 @@ class CoursesController extends Controller
             }
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
-            #left join on courses_id = inscriptions.course_id and inscriptions.user_id = user_id
+            #order by id desc
             $list = Courses::with(['category','professors','lessons.professor','workshops'])
             ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', function($join) use ($user) {
@@ -445,6 +445,7 @@ class CoursesController extends Controller
                      ->where('inscriptions.user_id', $user->id);
             })
             ->where('courses.active', 1)
+            ->orderBy('courses.id', 'desc')
             ->get();
 
             foreach($list as $course){
