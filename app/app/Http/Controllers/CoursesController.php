@@ -437,13 +437,12 @@ class CoursesController extends Controller
             }
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
-            #left join and inscriptions.user_id is null or user_id
+            #left join on courses_id = inscriptions.course_id and inscriptions.user_id = user_id
             $list = Courses::with(['category','professors','lessons.professor','workshops'])
             ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', function($join) use ($user) {
                 $join->on('courses.id', '=', 'inscriptions.course_id')
-                     ->where('inscriptions.user_id', $user->id)
-                     ->where('inscriptions.user_id', '==', null);
+                     ->where('inscriptions.user_id', $user->id);
             })
             ->where('courses.active', 1)
             ->get();
