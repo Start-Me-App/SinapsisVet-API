@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('custom-limit', function ($request) {
-            return Limit::perMinute(100); // Permitir 100 solicitudes por minuto
+            return Limit::perMinute(10000); // Permitir 1000 solicitudes por minuto
         });
     }
 }
