@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
 use App\Models\Categories;
 
-Route::middleware(['throttle:custom-limit'])->group(function () {
-        
+
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
     Route::post('/register/verify', [AuthController::class,'verifyEmail']);
@@ -153,5 +152,3 @@ Route::middleware(['throttle:custom-limit'])->group(function () {
 
         });
     });
-});
-
