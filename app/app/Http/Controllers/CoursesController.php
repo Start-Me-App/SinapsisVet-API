@@ -424,7 +424,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Courses::with(['category','professors','lessons.professor','workshops'])->get();
+            $list = Courses::with(['category','professors','lessons.professor','workshops'])->orderBy('id','desc')->get();
             foreach($list as $course){
                 foreach ($course->lessons as $lesson) {
                     $lesson->video_url = null;
