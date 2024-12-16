@@ -36,7 +36,7 @@ class FileController extends Controller
             return response()->json(['error' => 'El material no existe'], 409);
         }
 
-        #get token from request
+   /*      #get token from request
         $accessToken = TokenManager::getTokenFromRequest();
         $user        = TokenManager::getUserFromToken($accessToken);
 
@@ -47,7 +47,7 @@ class FileController extends Controller
             if(!$is_inscribed_workshop && !$is_inscribed_lesson){
                 return response()->json(['error' => 'No tienes permisos para descargar este archivo'], 409);
             }
-        }   
+        }    */
 
         $path = storage_path('app/public/'.$lessonOrWorkshop.'/'.$id.'/materials/'.$filename);
         return response()->download($path);
