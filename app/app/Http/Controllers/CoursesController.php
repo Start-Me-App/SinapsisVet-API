@@ -443,7 +443,7 @@ class CoursesController extends Controller
             ->leftJoin('inscriptions', function($join) use ($user) {
                 $join->on('courses.id', '=', 'inscriptions.course_id')
                      ->where('inscriptions.user_id', $user->id)
-                     ->orWhereNull('inscriptions.user_id');
+                     ->where('inscriptions.user_id', '==', null);
             })
             ->where('courses.active', 1)
             ->get();
