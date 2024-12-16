@@ -442,7 +442,11 @@ class CoursesController extends Controller
             ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', 'courses.id', '=', 'inscriptions.course_id')
             ->where('courses.active', 1)
-            ->where('inscriptions.user_id', $user->id)
+            #where user is inscribed or user_id is null
+            ->where(function($query) use ($user) {
+                $query->where('inscriptions.user_id', $user->id)
+                      ->orWhereNull('inscriptions.user_id');
+            })
             ->get();
 
             foreach($list as $course){
