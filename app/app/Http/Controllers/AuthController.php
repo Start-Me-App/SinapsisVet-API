@@ -114,7 +114,8 @@ class Authcontroller extends Controller
         }
        
         $accessToken = $request->input("token-id");
-        
+        var_dump($accessToken);
+        exit;
         if (empty($accessToken)) {
             return response()->json(['error' => 'Token is required'], 401);
         }
@@ -158,12 +159,15 @@ class Authcontroller extends Controller
         
         $userCreated = User::with([['role','moduleByRole.module','nationality']])->where('email', $user->email)->first();
         
-        
-        #create jwt token
-        $token = TokenManager::makeToken($userCreated);
-
-
-        return response()->json(['token' => $token], 200);
+        if($userCreated){
+            #create jwt token
+            $token = TokenManager::makeToken($userCreated);
+    
+    
+            return response()->json(['token' => $token], 200);
+        }else{
+            return response()->json(['error' => 'Error al crear el usuario'], 401);
+        }
         
     }
 
