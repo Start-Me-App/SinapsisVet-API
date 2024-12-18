@@ -35,4 +35,6 @@ class NotificationMercadoPago extends Model
         'action',
         'data_id'
     ];
+
+    #t
 } 
