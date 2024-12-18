@@ -7,11 +7,13 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops};
+use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail};
 
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
+
+use App\Http\Controllers\MercadoPago\CheckoutPro;
 
 class ShoppingCartController extends Controller
 {   
@@ -140,11 +142,13 @@ class ShoppingCartController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
         $user = TokenManager::getUserFromToken($accessToken);
 
-        $shoppingCart = ShoppingCart::with(['items'])->where('user_id', $user->id)->where('active', 1)->first();
+        $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
         if(!$shoppingCart){
             return response()->json(['message' => 'Carrito no encontrado'], 404);
         }
+
+        $paymentMethodId = $request->input('paymentMethodId');
        
        foreach ($shoppingCart->items as $item) {
 
@@ -154,25 +158,92 @@ class ShoppingCartController extends Controller
             if($inscripcion){
                 if($inscripcion->with_workshop == 1){
                     return response()->json(['message' => 'Ya estás inscripto en este curso y taller', 'course_id' => $item->course_id], 500);
-                }else{
-                    $inscripcion->with_workshop = $item->with_workshop;
-                    $inscripcion->save();
                 }
-            }else{
-                #inscribir al curso
-                $inscripcion = new Inscriptions();
-                $inscripcion->user_id = $user->id;
-                $inscripcion->course_id = $item->course_id;
-                $inscripcion->with_workshop = $item->with_workshop;
-                $inscripcion->save();
             }
        }
 
-        #desactivar carrito
-        $shoppingCart->active = 0;
-        $shoppingCart->save();
+       $order = new Order();
+       $order->user_id = $user->id;
+       $order->shopping_cart_id = $shoppingCart->id;
+       $order->payment_method_id = $paymentMethodId;
+       $order->status = 'pending';
+       $order->date_created = date('Y-m-d H:i:s');
+       $order->date_last_updated = date('Y-m-d H:i:s');
+       $order->date_closed = null;
+       $order->date_paid = null;
+       $order->save();
 
-        #crear nuevo carrito
+       foreach($shoppingCart->items as $item){
+           #check if user is already inscribed
+           $inscripcion = Inscriptions::where('user_id', $user->id)->where('course_id', $item->course_id)->first();
+
+           if($inscripcion){
+               if($inscripcion->with_workshop != 1){     
+                   #Es por que está comprando solo el taller
+                   $orderDetail = new OrderDetail();
+                   $orderDetail->order_id = $order->id;
+                   $orderDetail->course_id = $item->course_id;
+                   if($paymentMethodId == 1 || $paymentMethodId == 2){
+                    $orderDetail->price = env('WORKSHOP_PRICE_ARS');
+                   }else{
+                    $orderDetail->price = env('WORKSHOP_PRICE_USD');
+                   }
+                   $orderDetail->with_workshop = $item->with_workshop;
+                   $orderDetail->quantity = 1;
+                   $orderDetail->save();
+               }
+           }else{
+            
+               $orderDetail = new OrderDetail();
+               $orderDetail->order_id = $order->id;
+               $orderDetail->course_id = $item->course_id;
+               $orderDetail->with_workshop = $item->with_workshop;
+               
+               if($item->with_workshop == 1){
+                   if($paymentMethodId == 1 || $paymentMethodId == 2){
+                    $price = $item->course->price_ars;
+                    $price = $price + env('WORKSHOP_PRICE_ARS');
+                   }else{
+                    $price = $item->course->price_usd;
+                    $price = $price + env('WORKSHOP_PRICE_USD');
+                   }
+               }else{
+                if($paymentMethodId == 1 || $paymentMethodId == 2){
+                    $price = $item->course->price_ars;
+                }else{
+                    $price = $item->course->price_usd;
+                }
+               }
+               $orderDetail->price = $price;
+               $orderDetail->quantity = 1;
+               $orderDetail->save();
+
+           }
+       }
+        
+       #obtengo el total de la orden
+       $total = OrderDetail::where('order_id', $order->id)->sum('price');
+     
+       switch($paymentMethodId){
+        case 1: #Mercado Pago
+                #creo la preferencia de pago
+                $checkoutPro = new CheckoutPro();
+                $preference = $checkoutPro->processPreference(floatval($total),$user->id,$order->id);                
+                if(!$preference){
+                    #delete order details
+                    OrderDetail::where('order_id', $order->id)->delete();
+                    $order->delete();
+                    return response()->json(['message' => $preference['error_message']], 500);
+                }
+            break;
+        case 2: #Transferencia
+            $preference = null;
+            break;
+       }
+     
+
+       $shoppingCart->active = 0;
+       $shoppingCart->save();
 
         $newShoppingCart = new ShoppingCart();
         $newShoppingCart->user_id = $user->id;
@@ -181,10 +252,9 @@ class ShoppingCartController extends Controller
         
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
-        return response()->json(['msg' => 'Carrito procesado correctamente'], 200);
+        return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order], 200);
 
     }
 
-
-
 }
+    

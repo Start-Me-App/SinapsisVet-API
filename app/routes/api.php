@@ -11,6 +11,10 @@ use App\Http\Controllers\{CategoriesController, CoursesController,LessonsControl
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
 use App\Models\Categories;
+use App\Http\Controllers\MercadoPago\MercadoPago;
+use App\Http\Controllers\MercadoPago\CheckoutPro;
+use App\Http\Controllers\MercadoPago\WebHook;
+use App\Http\Controllers\OrdersController;
 
 
     Route::post('/login', [AuthController::class,'login']);
@@ -41,6 +45,10 @@ use App\Models\Categories;
 
     Route::get('generate-pdf', [PDFController::class, 'generatePDF']);
 
+
+    
+    Route::post('/mercadopago/processPreference', [CheckoutPro::class,'processPreference']);
+    Route::post('/mercadopago/webhook', [WebHook::class,'notification']);
 
     #Courses
 
@@ -73,6 +81,10 @@ use App\Models\Categories;
     });
 
 
+    #create route group for orders
+    Route::group(['prefix' => 'orders'], function () {
+        Route::get('', [OrdersController::class,'getMyOrders']);
+    });
 
 
 
@@ -151,4 +163,15 @@ use App\Models\Categories;
             Route::delete('/{category_id}', [CategoriesController::class,'delete']);
 
         });
+
+
+        #create route group for orders
+        Route::group(['prefix' => 'orders'], function () {
+            Route::get('/all', [OrdersController::class,'getAll']);
+            Route::get('/{order_id}', [OrdersController::class,'getOrderDetails']);
+            Route::post('/{order_id}/accept', [OrdersController::class,'acceptOrder']);
+            Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder']);
+        }); 
+
+
     });

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('active');
             $table->integer('professor_id');
 
-            $table->date('date')->nullable();
+            $table->datetime('date')->nullable();
 
             #$table->foreign('course_id')->references('id')->on('courses');
         });
