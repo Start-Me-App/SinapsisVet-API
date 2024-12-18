@@ -114,13 +114,11 @@ class Authcontroller extends Controller
         }
        
         $accessToken = $request->input("token-id");
-        var_dump($accessToken);
-        exit;
+ 
         if (empty($accessToken)) {
             return response()->json(['error' => 'Token is required'], 401);
         }
-        try {
-     
+        try {     
             $verifiedIdToken = $this->auth->verifyIdToken($accessToken);
 
 
@@ -133,13 +131,15 @@ class Authcontroller extends Controller
                 'message' => $exception->getMessage(),
             ]);
         }
+      
         $check_user = User::with(['role','moduleByRole.module','nationality'])->where('email', $user->email)->first();
         
+      
         if($check_user){
             $token = TokenManager::makeToken($check_user);
             return response()->json(['token' => $token], 200);
         }
-
+    
         $userCreated = User::firstOrCreate(
             [
                 'email' => $user->email,
@@ -156,8 +156,8 @@ class Authcontroller extends Controller
                 'email_verified_at' => date('Y-m-d H:i:s'),
             ]
         );
-        
-        $userCreated = User::with([['role','moduleByRole.module','nationality']])->where('email', $user->email)->first();
+
+        $userCreated =  User::with(['role','moduleByRole.module','nationality'])->where('email', $user->email)->first();
         
         if($userCreated){
             #create jwt token
