@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Eloquent\Model;
 
-class NotificationMercadopago extends Model
+class NotificationMercadoPago extends Model
 {
     /**
      * La tabla asociada al modelo.
