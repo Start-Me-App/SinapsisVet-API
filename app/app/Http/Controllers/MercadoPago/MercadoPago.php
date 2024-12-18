@@ -18,7 +18,7 @@ class MercadoPago extends Controller
         MercadoPagoConfig::setAccessToken($_ENV['MERCADOPAGO_ACCESS_TOKEN']);
         
         # Indica la URL desde la que se recibirán las notificaciones.
-        $this->notification_url = env('APP_URL') . "/api/mercadopago/webhook";
+        $this->notification_url = env('API_URL') . "/api/mercadopago/webhook";
     }
 
 
