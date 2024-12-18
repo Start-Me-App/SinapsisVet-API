@@ -76,6 +76,9 @@ final class WebHook extends MercadoPago
        throw new \Exception($error->getMessage(),500);
        }
 
+       if(!$payment){
+        throw new \Exception('Payment not found',500);
+       }
         $paymenStateById = (object)[
             "data_id"          => $payment->id,
             "status"           => $payment->status,

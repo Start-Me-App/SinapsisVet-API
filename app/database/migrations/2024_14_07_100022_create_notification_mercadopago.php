@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('api_version');
             $table->string('action');
             $table->string('data_id');
+            $table->string('type');
         });
     }
 

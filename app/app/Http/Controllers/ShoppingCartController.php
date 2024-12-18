@@ -233,7 +233,7 @@ class ShoppingCartController extends Controller
                     #delete order details
                     OrderDetail::where('order_id', $order->id)->delete();
                     $order->delete();
-                    return response()->json(['message' => $preference['error_message']], 500);
+                    return response()->json(['message' => $preference], 500);
                 }
             break;
         case 2: #Transferencia
