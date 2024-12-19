@@ -55,10 +55,13 @@ class LessonsController extends Controller
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
-        if(!isset($data['time'])){
-            $data['time'] = '00:00:00';
+
+        if(isset($data['date'])){
+            $lesson->date = Carbon::parse($data['date'])->format('Y-m-d');
         }
-        $lesson->date = Carbon::parse($data['date'].' '.$data['time'])->format('Y-m-d H:i:s');
+        if(isset($data['time']) && isset($data['date'])){
+            $lesson->time = Carbon::parse($data['date'].' '.$data['time'])->format('H:i:s');
+        }
 
         $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
         if(!$profesor){
@@ -132,10 +135,12 @@ class LessonsController extends Controller
             return response()->json(['error' => 'La leccion no existe'], 409);
         }
 
-        if(!isset($data['time'])){
-            $data['time'] = '00:00:00';
+        if(isset($data['date'])){
+            $lesson->date = Carbon::parse($data['date'])->format('Y-m-d');
         }
-        $lesson->date = Carbon::parse($data['date'].' '.$data['time'])->format('Y-m-d H:i:s');
+        if(isset($data['time']) && isset($data['date'])){
+            $lesson->time = Carbon::parse($data['date'].' '.$data['time'])->format('H:i:s');
+        }
 
         $lesson->name = $data['name'];
         $lesson->description = $data['description'];    

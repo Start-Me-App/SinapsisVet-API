@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Carbon\Carbon;
 class Lessons extends Model
 {
     use HasFactory;
@@ -35,6 +35,7 @@ class Lessons extends Model
 
     #hidden fields
     protected $hidden = ['professor_id'];
+
    
     public function course()
     {
