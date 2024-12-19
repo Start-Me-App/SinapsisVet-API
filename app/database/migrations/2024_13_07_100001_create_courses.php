@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('photo_url');
             $table->date('starting_date');
             $table->date('inscription_date');
+            $table->string('asociation_path')->nullable();
 
         });
     }

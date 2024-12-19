@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('notification_mercadopago', function (Blueprint $table) {
             $table->id();
-            $table->integer('id_webhook');
+            $table->bigInteger('id_webhook');
             $table->string('live_mode');
             $table->string('date_created');
             $table->string('user_id_mercadopago');

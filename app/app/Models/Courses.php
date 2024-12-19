@@ -56,6 +56,11 @@ class Courses extends Model
         return env('STATIC_URL') . $this->attributes['photo_url'];
     }
    
+    public function getAsociationPathAttribute()
+    {
+        return env('STATIC_URL') . $this->attributes['asociation_path'];
+    }
+   
 
 
     public function professors()
@@ -87,5 +92,10 @@ class Courses extends Model
     public function inscriptions()
     {
         return $this->hasMany(Inscriptions::class, 'course_id', 'id');
+    }
+
+    public function custom_fields()
+    {
+        return $this->hasMany(CoursesCustomField::class, 'course_id', 'id');
     }
 }

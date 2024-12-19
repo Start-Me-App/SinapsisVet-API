@@ -9,7 +9,7 @@ use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
 use App\Models\{Courses, User, Lessons,Materials,ViewLesson};
 use Illuminate\Support\Facades\Input;
-
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
@@ -55,7 +55,11 @@ class LessonsController extends Controller
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
-        $lesson->date = $data['date'];
+        if(!isset($data['time'])){
+            $data['time'] = '00:00:00';
+        }
+        $lesson->date = Carbon::parse($data['date'].' '.$data['time'])->format('Y-m-d H:i:s');
+
         $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
         if(!$profesor){
             return response()->json(['error' => 'Profesor no encontrado'], 409);
@@ -127,6 +131,11 @@ class LessonsController extends Controller
         if(!$lesson){
             return response()->json(['error' => 'La leccion no existe'], 409);
         }
+
+        if(!isset($data['time'])){
+            $data['time'] = '00:00:00';
+        }
+        $lesson->date = Carbon::parse($data['date'].' '.$data['time'])->format('Y-m-d H:i:s');
 
         $lesson->name = $data['name'];
         $lesson->description = $data['description'];    

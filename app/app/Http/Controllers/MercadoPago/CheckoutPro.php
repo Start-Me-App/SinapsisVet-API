@@ -31,7 +31,6 @@ final class CheckoutPro extends MercadoPago
 
         if(is_array($preference)){
             if(isset($preference['error_message'])){
-                var_dump($preference['error_message']);
                     return null;
                 }
         }

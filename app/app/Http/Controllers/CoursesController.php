@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse};
+use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse,CoursesCustomField};
 
 use Illuminate\Support\Facades\DB;
 
@@ -77,6 +77,21 @@ class CoursesController extends Controller
             return response()->json(['error' => 'La fecha de inicio no puede ser menor que la fecha de inscripcion'], 409);
         }
 
+        if(isset($data['asociation_file'])){
+            if(!UploadServer::validateImage($data['asociation_file'])){
+                return response()->json(['error' => 'El archivo no es un archivo'], 409);
+            }
+    
+            $upload_asociation = UploadServer::uploadImage($data['asociation_file'],'asociations');
+            
+            if(!$upload_asociation){
+                return response()->json(['error' => 'Error al subir la imagen'], 500);
+            } 
+
+        }else{
+            $upload_asociation = null;
+        }
+
 
       
  
@@ -91,7 +106,8 @@ class CoursesController extends Controller
         $course->starting_date = $data['starting_date'];
         $course->inscription_date = $data['inscription_date'];
         $course->objective = $data['objective'];
-        $course->presentation = $data['presentation'];
+        $course->presentation = $data['presentation'];        
+        $course->asociation_path = $upload_asociation;
 
         if($course->save()){
 
@@ -108,7 +124,17 @@ class CoursesController extends Controller
                 $professorByCourse->save();
             }
 
-            $course_rta = Courses::with(['professors'])->find($course->id);
+            if(isset($data['custom_fields'])){
+                foreach($data['custom_fields'] as $custom_field){
+                    $course_custom_field = new CoursesCustomField();
+                    $course_custom_field->name = $custom_field['name'];
+                    $course_custom_field->value = $custom_field['value'];
+                    $course_custom_field->course_id = $course->id;
+                    $course_custom_field->save();
+                }
+            }
+
+            $course_rta = Courses::with(['professors','custom_fields'])->find($course->id);
 
             return response()->json(['message' => 'Curso creado correctamente', 'data' => $course_rta ], 200);
         }
@@ -168,6 +194,22 @@ class CoursesController extends Controller
                 $course->photo_url = $upload;
             }
         }
+
+
+        if(isset($data['asociation_file'])){
+            if(!UploadServer::validateImage($data['asociation_file'])){
+                return response()->json(['error' => 'El archivo no es un archivo'], 409);
+            }
+    
+            $upload = UploadServer::uploadImage($data['asociation_file'],'asociations');
+            
+            if(!$upload){
+                return response()->json(['error' => 'Error al subir la imagen'], 500);
+            } 
+
+            $course->asociation_path = $upload;
+        }
+
   
         $course->title = $data['title'];
         $course->description = $data['description'];
@@ -196,6 +238,20 @@ class CoursesController extends Controller
                 $professorByCourse->professor_id = $professor_id;
                 $professorByCourse->save();
             }
+
+
+            if(isset($data['custom_fields'])){
+                $course_custom_fields = CoursesCustomField::where('course_id',$course_id)->delete();
+                if(count($data['custom_fields']) > 0){
+                    foreach($data['custom_fields'] as $custom_field){
+                    $course_custom_field = new CoursesCustomField();
+                    $course_custom_field->name = $custom_field['name'];
+                    $course_custom_field->value = $custom_field['value'];
+                    $course_custom_field->course_id = $course_id;
+                        $course_custom_field->save();
+                    }
+                }
+            }
         }
 
         #delete professors that are not in the request
@@ -203,7 +259,7 @@ class CoursesController extends Controller
         
         if($course->save()){
 
-            $course_rta = Courses::with(['professors'])->find($course->id);
+            $course_rta = Courses::with(['professors','custom_fields'])->find($course->id);
        
             return response()->json(['message' => 'Curso actualizado correctamente', 'data' => $course_rta ], 200);
         }
@@ -247,7 +303,7 @@ class CoursesController extends Controller
 
         $params = $request->all();
       
-        $list = Courses::with(['category','professors'])->get();
+        $list = Courses::with(['category','professors','custom_fields'])->get();
       
         return response()->json(['data' => $list], 200);
     }
@@ -261,7 +317,7 @@ class CoursesController extends Controller
     public function getCourse(Request $request,$course_id)
     {   
         
-        $list = Courses::with(['category','professors','lessons.materials','workshops','exams','inscriptions.student'])->find($course_id);
+        $list = Courses::with(['category','professors','lessons.materials','lessons.professor','workshops','exams','inscriptions.student','custom_fields'])->find($course_id);
       
         return response()->json(['data' => $list], 200);
     }
@@ -424,7 +480,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Courses::with(['category','professors','lessons.professor','workshops'])->orderBy('id','desc')->get();
+            $list = Courses::with(['category','professors','lessons.professor','workshops','custom_fields'])->orderBy('id','desc')->get();
             foreach($list as $course){
                 foreach ($course->lessons as $lesson) {
                     $lesson->video_url = null;
@@ -438,7 +494,7 @@ class CoursesController extends Controller
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
             #order by id desc
-            $list = Courses::with(['category','professors','lessons.professor','workshops'])
+            $list = Courses::with(['category','professors','lessons.professor','workshops','custom_fields'])
             ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', function($join) use ($user) {
                 $join->on('courses.id', '=', 'inscriptions.course_id')
@@ -478,7 +534,7 @@ class CoursesController extends Controller
      */
     public function listCourse(Request $request,$course_id)
     {   
-        $list = Courses::with(['category','professors','lessons','workshops'])->find($course_id);
+        $list = Courses::with(['category','professors','lessons.professor','workshops','custom_fields'])->find($course_id);
 
         $accessToken = TokenManager::getTokenFromRequest();
         if(!is_null($accessToken)){
