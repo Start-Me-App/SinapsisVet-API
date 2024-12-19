@@ -25,7 +25,9 @@ return new class extends Migration
             $table->date('starting_date');
             $table->date('inscription_date');
             $table->string('asociation_path')->nullable();
-
+            $table->string('subtitle')->nullable();
+            $table->longText('destined_to')->nullable();
+            $table->longText('certifications')->nullable();
         });
     }
 

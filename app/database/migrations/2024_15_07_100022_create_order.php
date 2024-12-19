@@ -21,6 +21,10 @@ return new class extends Migration
             $table->datetime('date_paid')->nullable();
             $table->integer('shopping_cart_id')->unique();
             $table->string('payment_method_id');
+            $table->string('invoice_name')->nullable();
+            $table->string('invoice_email')->nullable();
+            $table->string('invoice_address')->nullable();
+            $table->string('invoice_document')->nullable();
         });
     }
 

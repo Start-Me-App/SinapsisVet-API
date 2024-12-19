@@ -92,6 +92,9 @@ class CoursesController extends Controller
             $upload_asociation = null;
         }
 
+        $subtitle = isset($data['subtitle']) ? $data['subtitle'] : null;
+        $destined_to = isset($data['destined_to']) ? $data['destined_to'] : null;
+        $certifications = isset($data['certifications']) ? $data['certifications'] : null;
 
       
  
@@ -108,6 +111,9 @@ class CoursesController extends Controller
         $course->objective = $data['objective'];
         $course->presentation = $data['presentation'];        
         $course->asociation_path = $upload_asociation;
+        $course->subtitle = $subtitle;
+        $course->destined_to = $destined_to;
+        $course->certifications = $certifications;
 
         if($course->save()){
 
@@ -214,6 +220,9 @@ class CoursesController extends Controller
             $course->asociation_path = $upload;
         }
 
+        $subtitle = isset($data['subtitle']) ? $data['subtitle'] : null;
+        $destined_to = isset($data['destined_to']) ? $data['destined_to'] : null;
+        $certifications = isset($data['certifications']) ? $data['certifications'] : null;  
   
         $course->title = $data['title'];
         $course->description = $data['description'];
@@ -225,6 +234,9 @@ class CoursesController extends Controller
         $course->inscription_date = $data['inscription_date'];
         $course->objective = $data['objective'];
         $course->presentation = $data['presentation'];
+        $course->subtitle = $subtitle;
+        $course->destined_to = $destined_to;
+        $course->certifications = $certifications;
 
 
         foreach($data['professors'] as $professor_id){

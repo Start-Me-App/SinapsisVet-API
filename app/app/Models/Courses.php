@@ -34,7 +34,10 @@ class Courses extends Model
         'category_id',
         'photo_url',
         'starting_date',
-        'inscription_date'
+        'inscription_date',
+        'subtitle',
+        'destined_to',
+        'certifications'
 
     ];
 

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('courses_custom_fields', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('value');
+            $table->longText('value');
             $table->integer('course_id');
         });
     }
