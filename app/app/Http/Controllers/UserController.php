@@ -153,7 +153,7 @@ class UserController extends Controller
         }
 
         if(isset($params['role'])){
-            $roleId = $params['role'];
+            $roleId = [$params['role']];
         }else{
             $roleId = [1,2,3];
         }
