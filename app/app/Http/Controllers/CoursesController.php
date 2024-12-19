@@ -124,7 +124,7 @@ class CoursesController extends Controller
                 $professorByCourse->save();
             }
 
-            if(isset($data['custom_fields'])){
+            if(isset($data['custom_fields']) && count($data['custom_fields']) > 0){
                 foreach($data['custom_fields'] as $custom_field){
                     $course_custom_field = new CoursesCustomField();
                     $course_custom_field->name = $custom_field['name'];
