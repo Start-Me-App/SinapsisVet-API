@@ -489,6 +489,7 @@ class ExamsController extends Controller
         if($result){
             if($result->final_grade < $final_grade) {
                 $result->final_grade = $final_grade;
+                $result->date = date('Y-m-d');
                 $result->save();
             }
         }else{

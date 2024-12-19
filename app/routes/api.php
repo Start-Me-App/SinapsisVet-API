@@ -43,7 +43,9 @@ use App\Http\Controllers\OrdersController;
     Route::get('/images/url/{checksum}',[FileController::class,'getImageByUrl']);
 
 
-    Route::get('generate-pdf', [PDFController::class, 'generatePDF']);
+    Route::get('assistance/generate-pdf', [PDFController::class, 'generateAssistancePdf']);
+    Route::get('approved/generate-pdf', [PDFController::class, 'generateApprovedPdf']);
+    Route::get('workshop/generate-pdf', [PDFController::class, 'generateWorkshopPdf']);
 
 
     
