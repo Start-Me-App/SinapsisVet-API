@@ -124,13 +124,17 @@ class CoursesController extends Controller
                 $professorByCourse->save();
             }
 
-            if(isset($data['custom_fields']) && count($data['custom_fields']) > 0){
-                foreach($data['custom_fields'] as $custom_field){
-                    $course_custom_field = new CoursesCustomField();
-                    $course_custom_field->name = $custom_field['name'];
-                    $course_custom_field->value = $custom_field['value'];
-                    $course_custom_field->course_id = $course->id;
-                    $course_custom_field->save();
+            
+            if(isset($data['custom_fields'])){
+                $aux_custom_fields = json_decode($data['custom_fields'],true);
+                if(count($aux_custom_fields) > 0){
+                foreach($aux_custom_fields as $custom_field){
+                        $course_custom_field = new CoursesCustomField();
+                        $course_custom_field->name = $custom_field['name'];
+                        $course_custom_field->value = $custom_field['value'];
+                        $course_custom_field->course_id = $course->id;
+                        $course_custom_field->save();
+                    }
                 }
             }
 
@@ -240,14 +244,16 @@ class CoursesController extends Controller
             }
 
 
+
             if(isset($data['custom_fields'])){
+                $aux_custom_fields = json_decode($data['custom_fields'],true);
                 $course_custom_fields = CoursesCustomField::where('course_id',$course_id)->delete();
-                if(count($data['custom_fields']) > 0){
-                    foreach($data['custom_fields'] as $custom_field){
-                    $course_custom_field = new CoursesCustomField();
-                    $course_custom_field->name = $custom_field['name'];
-                    $course_custom_field->value = $custom_field['value'];
-                    $course_custom_field->course_id = $course_id;
+                if(count($aux_custom_fields) > 0){
+                    foreach($aux_custom_fields as $custom_field){
+                        $course_custom_field = new CoursesCustomField();
+                        $course_custom_field->name = $custom_field['name'];
+                        $course_custom_field->value = $custom_field['value'];
+                        $course_custom_field->course_id = $course_id;
                         $course_custom_field->save();
                     }
                 }
