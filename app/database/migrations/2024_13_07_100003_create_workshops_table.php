@@ -18,6 +18,11 @@ return new class extends Migration
             $table->string('video_url');
             $table->string('description');
             $table->integer('active');
+            $table->date('date')->nullable();
+            $table->time('time')->nullable();
+
+            $table->bigInteger('zoom_meeting_id')->nullable();
+            $table->string('zoom_passcode')->nullable();    
 
             #$table->foreign('course_id')->references('id')->on('courses');
         });

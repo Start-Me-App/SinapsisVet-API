@@ -30,7 +30,12 @@ class Lessons extends Model
         'name',
         'description',
         'active',
-        'video_url'
+        'video_url',
+        'professor_id',
+        'date',
+        'time',
+        'zoom_meeting_id',
+        'zoom_passcode'
     ];
 
     #hidden fields

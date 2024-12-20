@@ -41,7 +41,9 @@ class LessonsController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-     
+        
+        $zoom_meeting_id = isset($data['zoom_meeting_id']) ? $data['zoom_meeting_id'] : null;
+        $zoom_passcode = isset($data['zoom_passcode']) ? $data['zoom_passcode'] : null;
         #validate if course exists
         $course = Courses::where('id',$data['course_id'])->first();
         
@@ -55,6 +57,8 @@ class LessonsController extends Controller
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+        $lesson->zoom_meeting_id = $zoom_meeting_id;
+        $lesson->zoom_passcode = $zoom_passcode;
 
         if(isset($data['date'])){
             $lesson->date = Carbon::parse($data['date'])->format('Y-m-d');
@@ -142,10 +146,15 @@ class LessonsController extends Controller
             $lesson->time = Carbon::parse($data['date'].' '.$data['time'])->format('H:i:s');
         }
 
+        $zoom_meeting_id = isset($data['zoom_meeting_id']) ? $data['zoom_meeting_id'] : null;
+        $zoom_passcode = isset($data['zoom_passcode']) ? $data['zoom_passcode'] : null;
+
         $lesson->name = $data['name'];
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+        $lesson->zoom_meeting_id = $zoom_meeting_id;
+        $lesson->zoom_passcode = $zoom_passcode;
         $lesson->date = $data['date'];
         $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
         if(!$profesor){

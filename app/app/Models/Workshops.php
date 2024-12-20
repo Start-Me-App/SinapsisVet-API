@@ -30,7 +30,11 @@ class Workshops extends Model
         'name',
         'description',
         'active',
-        'video_url'
+        'video_url',
+        'date',
+        'time',
+        'zoom_meeting_id',
+        'zoom_passcode'
     ];
    
 

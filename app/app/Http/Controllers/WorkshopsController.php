@@ -14,9 +14,8 @@ use Illuminate\Support\Facades\DB;
 use App\Support\TokenManager;
 
 use App\Support\UploadServer;
-use Illuminate\Queue\Worker;
 
-use function PHPSTORM_META\map;
+use Carbon\Carbon;
 
 class WorkshopsController extends Controller
 {   
@@ -51,12 +50,22 @@ class WorkshopsController extends Controller
             return response()->json(['error' => 'El curso no existe'], 409);
         }
 
+        $zoom_meeting_id = isset($data['zoom_meeting_id']) ? $data['zoom_meeting_id'] : null;   
+        $zoom_passcode = isset($data['zoom_passcode']) ? $data['zoom_passcode'] : null;
+
+        $date = isset($data['date']) ? $data['date'] : null;
+        $time = isset($data['time']) ? $data['time'] : null;
+
         $workshop = new Workshops();
         $workshop->course_id = $data['course_id'];
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
         $workshop->video_url = $data['video_url'];
+        $workshop->zoom_meeting_id = $zoom_meeting_id;
+        $workshop->zoom_passcode = $zoom_passcode;
+        $workshop->date = $date;
+        $workshop->time = $time;
 
 
         if($workshop->save()){
@@ -116,11 +125,21 @@ class WorkshopsController extends Controller
             return response()->json(['error' => 'El taller no existe'], 409);
         }
 
+        $zoom_meeting_id = isset($data['zoom_meeting_id']) ? $data['zoom_meeting_id'] : null;   
+        $zoom_passcode = isset($data['zoom_passcode']) ? $data['zoom_passcode'] : null;
+        if(isset($data['date'])){
+            $workshop->date = Carbon::parse($data['date'])->format('Y-m-d');
+        }
+        if(isset($data['time']) && isset($data['date'])){
+            $workshop->time = Carbon::parse($data['date'].' '.$data['time'])->format('H:i:s');
+        }
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
         $workshop->video_url = $data['video_url'];
-
+        $workshop->zoom_meeting_id = $zoom_meeting_id;
+        $workshop->zoom_passcode = $zoom_passcode;
+  
 
         if($workshop->save()){
 

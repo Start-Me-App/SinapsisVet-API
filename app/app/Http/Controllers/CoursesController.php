@@ -502,10 +502,14 @@ class CoursesController extends Controller
             foreach($list as $course){
                 foreach ($course->lessons as $lesson) {
                     $lesson->video_url = null;
+                    $lesson->zoom_meeting_id = null;
+                    $lesson->zoom_passcode = null;
                     unset($lesson->materials);
                 }
                 foreach ($course->workshops as $workshop) {
                     $workshop->video_url = null;
+                    $workshop->zoom_meeting_id = null;
+                    $workshop->zoom_passcode = null;
                     unset($workshop->materials);
                 }
             }
@@ -526,13 +530,17 @@ class CoursesController extends Controller
                 if(!$course->inscribed){
                     foreach ($course->lessons as $lesson) {
                         $lesson->video_url = null;
+                        $lesson->zoom_meeting_id = null;
+                        $lesson->zoom_passcode = null;
                         unset($lesson->materials);
                     }
                     foreach ($course->workshops as $workshop) {
                         $workshop->video_url = null;
-                            unset($workshop->materials);
-                        }
+                        $workshop->zoom_meeting_id = null;
+                        $workshop->zoom_passcode = null;
+                        unset($workshop->materials);
                     }
+                }
             }
         }
 
@@ -561,10 +569,14 @@ class CoursesController extends Controller
             if(!$inscription){
                 foreach ($list->lessons as $lesson) {
                     $lesson->video_url = null;
+                    $lesson->zoom_meeting_id = null;
+                    $lesson->zoom_passcode = null;
                     unset($lesson->materials);
                 }
                 foreach ($list->workshops as $workshop) {
                     $workshop->video_url = null;
+                    $workshop->zoom_meeting_id = null;
+                    $workshop->zoom_passcode = null;
                     unset($workshop->materials);
                 }
             }else{
@@ -574,10 +586,14 @@ class CoursesController extends Controller
         }else{
             foreach ($list->lessons as $lesson) {
                 $lesson->video_url = null;
+                $lesson->zoom_meeting_id = null;
+                $lesson->zoom_passcode = null;
                 unset($lesson->materials);
             }
             foreach ($list->workshops as $workshop) {
                 $workshop->video_url = null;
+                $workshop->zoom_meeting_id = null;
+                $workshop->zoom_passcode = null;
                 unset($workshop->materials);
             }
         }
@@ -604,6 +620,8 @@ class CoursesController extends Controller
             $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
             foreach($list as $lesson){
                 $lesson->video_url = null;
+                $lesson->zoom_meeting_id = null;
+                $lesson->zoom_passcode = null;
                 foreach ($lesson->materials as $m) {
                     $m->file_path = null;
                     $m->file_path_url = null;
@@ -616,6 +634,8 @@ class CoursesController extends Controller
                 $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
                 foreach($list as $lesson){
                     $lesson->video_url = null;
+                    $lesson->zoom_meeting_id = null;
+                    $lesson->zoom_passcode = null;
                     foreach ($lesson->materials as $m) {
                         $m->file_path = null;
                         $m->file_path_url = null;
