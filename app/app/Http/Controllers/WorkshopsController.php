@@ -34,8 +34,7 @@ class WorkshopsController extends Controller
             'course_id' => 'required',
             'name' => 'required',
             'description' => 'required',
-            'active' => 'required|integer',
-            'video_url' => 'required'
+            'active' => 'required|integer'
         ]);
 
         if ($validator->fails()) {
@@ -61,7 +60,7 @@ class WorkshopsController extends Controller
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
-        $workshop->video_url = $data['video_url'];
+        $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
         $workshop->zoom_meeting_id = $zoom_meeting_id;
         $workshop->zoom_passcode = $zoom_passcode;
         $workshop->date = $date;
@@ -111,8 +110,7 @@ class WorkshopsController extends Controller
         $validator = validator($data, [
             'name' => 'required',
             'description' => 'required',
-            'active' => 'required|integer',
-            'video_url' => 'required'
+            'active' => 'required|integer'
         ]);
 
         if ($validator->fails()) {
@@ -136,7 +134,7 @@ class WorkshopsController extends Controller
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
-        $workshop->video_url = $data['video_url'];
+        $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
         $workshop->zoom_meeting_id = $zoom_meeting_id;
         $workshop->zoom_passcode = $zoom_passcode;
   
