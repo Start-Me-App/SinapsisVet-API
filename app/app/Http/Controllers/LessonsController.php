@@ -155,7 +155,6 @@ class LessonsController extends Controller
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
         $lesson->zoom_meeting_id = $zoom_meeting_id;
         $lesson->zoom_passcode = $zoom_passcode;
-        $lesson->date = $data['date'];
         $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
         if(!$profesor){
             return response()->json(['error' => 'Profesor no encontrado'], 409);
