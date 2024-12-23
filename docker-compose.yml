@@ -23,9 +23,9 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: laravel_db
-      MYSQL_USER: laravel_user
-      MYSQL_PASSWORD: secret
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: emanzano
+      MYSQL_PASSWORD: Ez3qu1el$96
+      MYSQL_ROOT_PASSWORD: Ez3qu1el$96
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
@@ -60,7 +60,15 @@ services:
     volumes:
       - ./docker/certbot/conf:/etc/letsencrypt
       - ./docker/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; certbot certonly --webroot -w /var/www/certbot -d sinapsisvet.com -d api-desarrollo.sinapsisvet.com --email ezequielm789@gmail.com --agree-tos --non-interactive; while :; do sleep 12h & wait $${!}; certbot renew; done;'"
+    entrypoint: "/bin/sh -c 'trap exit TERM; certbot certonly --webroot -w /var/www/certbot \
+                -d sinapsisvet.com \
+                -d api-sinapsisvet.com \
+                -d desarrollo-sinapsisvet.com \
+                -d api-desarrollo-sinapsisvet.com \
+                --email ezequielm789@gmail.com \
+                --agree-tos \
+                --non-interactive; \
+                while :; do sleep 12h & wait $${!}; certbot renew; done;'"
     networks:
       - sinapsisvet-api-laravel-network
       - sinapsisvet-shared-network
