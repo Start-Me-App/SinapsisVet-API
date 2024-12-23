@@ -128,8 +128,8 @@ class UserController extends Controller
         if(!$userObject){
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
-        $userObject->active = 0;
-        if($userObject->save()){
+        
+        if($userObject->delete()){
             return response()->json(['message' => 'Usuario eliminado correctamente'], 200);
         }   
         return response()->json(['error' => 'Error al eliminar el usuario'], 500);
