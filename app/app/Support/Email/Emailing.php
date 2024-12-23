@@ -150,7 +150,7 @@ class Emailing
                             </head>
                             <body>
                             <div class="container">
-                                <img src="https://sinapsisvet.com/sinapsisvet-logo.jpg" alt="Logo" class="logo">
+                                <img src="https://api.sinapsisvet.com/logo.png" alt="Logo" class="logo">
                                 <h1>Recuperación de Contraseña</h1>
                                 <p>Has solicitado restablecer tu contraseña. Para continuar con el proceso, por favor haz clic en el siguiente botón:</p>
                                 <a href="'.env('RESET_PW_URL').$token.'" class="button">Restablecer Contraseña</a>
@@ -220,7 +220,7 @@ class Emailing
             </head>
             <body>
             <div class="container">
-                <img src="https://sinapsisvet.com/sinapsisvet-logo.jpg" alt="Logo" class="logo">
+                <img src="https://api.sinapsisvet.com/logo.png" alt="Logo" class="logo">
                 <h1>Activación de Cuenta</h1>
                 <p>Gracias por registrarte en nuestro servicio. Para activar tu cuenta, por favor haz clic en el siguiente botón:</p>
                 <a href="'.env('VERIFY_PW_URL').$token.'" class="button">Activar Cuenta</a>
