@@ -34,7 +34,10 @@ class Courses extends Model
         'category_id',
         'photo_url',
         'starting_date',
-        'inscription_date'
+        'inscription_date',
+        'subtitle',
+        'destined_to',
+        'certifications'
 
     ];
 
@@ -56,10 +59,16 @@ class Courses extends Model
         return env('STATIC_URL') . $this->attributes['photo_url'];
     }
    
-
-    public function profesor()
+    public function getAsociationPathAttribute()
     {
-        return $this->hasOne(User::class, 'id', 'profesor_id');
+        return env('STATIC_URL') . $this->attributes['asociation_path'];
+    }
+   
+
+
+    public function professors()
+    {
+        return $this->belongsToMany(User::class, 'professor_by_course', 'course_id', 'professor_id');
     }
 
     public function category()
@@ -86,5 +95,10 @@ class Courses extends Model
     public function inscriptions()
     {
         return $this->hasMany(Inscriptions::class, 'course_id', 'id');
+    }
+
+    public function custom_fields()
+    {
+        return $this->hasMany(CoursesCustomField::class, 'course_id', 'id');
     }
 }

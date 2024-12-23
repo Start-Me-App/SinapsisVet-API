@@ -16,6 +16,7 @@ return new class extends Migration
             $table->integer('exam_id');
             $table->integer('final_grade');
             $table->integer('user_id');
+            $table->date('date');
         });
     }
 

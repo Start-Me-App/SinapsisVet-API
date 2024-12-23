@@ -13,17 +13,21 @@ return new class extends Migration
     {
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
-            $table->integer('profesor_id');
             $table->string('title');
-            $table->float('price_ars');
-            $table->float('price_usd');
-            $table->string('description');
+            $table->float('price_ars', 16, 2);
+            $table->float('price_usd', 16, 2);
+            $table->longText('description');
+            $table->longText('presentation');
+            $table->longText('objective');
             $table->integer('active');
             $table->integer('category_id');
             $table->string('photo_url');
             $table->date('starting_date');
             $table->date('inscription_date');
-
+            $table->string('asociation_path')->nullable();
+            $table->string('subtitle')->nullable();
+            $table->longText('destined_to')->nullable();
+            $table->longText('certifications')->nullable();
         });
     }
 

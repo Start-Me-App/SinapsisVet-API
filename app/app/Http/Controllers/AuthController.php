@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use App\Models\User;
+use App\Models\{User,ShoppingCart};
+use App\Support\Email\Emailing;
 use Laravel\Socialite\Facades\Socialite;
 use App\Support\TokenManager;
 
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
+use Kreait\Firebase\Value\Email;
 
 class Authcontroller extends Controller
 {
@@ -92,6 +94,8 @@ class Authcontroller extends Controller
         $userCreated = User::with(['role'])->where('email', $params['email'])->first();
 
 
+        Emailing::verifyEmail($userCreated);
+
         return response()->json(['msg' => 'Usuario creado con éxito'], 200);
         
     }
@@ -110,12 +114,11 @@ class Authcontroller extends Controller
         }
        
         $accessToken = $request->input("token-id");
-        
+ 
         if (empty($accessToken)) {
             return response()->json(['error' => 'Token is required'], 401);
         }
-        try {
-     
+        try {     
             $verifiedIdToken = $this->auth->verifyIdToken($accessToken);
 
 
@@ -128,13 +131,15 @@ class Authcontroller extends Controller
                 'message' => $exception->getMessage(),
             ]);
         }
+      
         $check_user = User::with(['role','moduleByRole.module','nationality'])->where('email', $user->email)->first();
         
+      
         if($check_user){
             $token = TokenManager::makeToken($check_user);
             return response()->json(['token' => $token], 200);
         }
-
+    
         $userCreated = User::firstOrCreate(
             [
                 'email' => $user->email,
@@ -151,15 +156,18 @@ class Authcontroller extends Controller
                 'email_verified_at' => date('Y-m-d H:i:s'),
             ]
         );
-        
-        $userCreated = User::with([['role','moduleByRole.module','nationality']])->where('email', $user->email)->first();
-        
-        
-        #create jwt token
-        $token = TokenManager::makeToken($userCreated);
 
-
-        return response()->json(['token' => $token], 200);
+        $userCreated =  User::with(['role','moduleByRole.module','nationality'])->where('email', $user->email)->first();
+        
+        if($userCreated){
+            #create jwt token
+            $token = TokenManager::makeToken($userCreated);
+    
+    
+            return response()->json(['token' => $token], 200);
+        }else{
+            return response()->json(['error' => 'Error al crear el usuario'], 401);
+        }
         
     }
 
@@ -203,7 +211,7 @@ class Authcontroller extends Controller
         }    
 
         if($user->email_verified_at == null){
-            return response()->json(['error' => 'Email no verificado'], 401);
+            return response()->json(['error' => 'Email no verificado'], 402);
         }
 
         #create jwt token
@@ -229,7 +237,26 @@ class Authcontroller extends Controller
             return response()->json(['error' => 'La sesion expiró'], 401);
         }
 
+
+
+
         $user = User::with(['role','moduleByRole.module','nationality'])->find($user->id);
+
+        #check if has a active shopping cart
+        
+        $cart = ShoppingCart::where('user_id', $user->id)->where('active',1)->first();
+        if(!$cart){
+            #create a new shopping cart
+            $cart = new ShoppingCart();
+            $cart->user_id = $user->id;
+            $cart->active = 1;
+            $cart->save();
+        }
+
+        $user->shopping_cart_id = $cart->id;
+
+
+
         return response()->json($user);
     }
    
@@ -242,11 +269,10 @@ class Authcontroller extends Controller
      */
     public function verifyEmail(Request $request)
     {
-        $params = $request->only('email', 'token');
+        $params = $request->only('token');
         
         #verify is the request has all the required fields
         $validator = validator($params, [
-            'email' => 'required|email',
             'token' => 'required'
         ]);
 
@@ -257,7 +283,7 @@ class Authcontroller extends Controller
         
              
         #get user data from database    
-        $user = User::with(['role'])->where('email', $params['email'])->where('verification_token', $params['token'])->first();
+        $user = User::with(['role'])->where('verification_token', $params['token'])->first();
             
         if(!$user){
             return response()->json(['error' => 'Token no válido'], 401);
@@ -305,6 +331,8 @@ class Authcontroller extends Controller
 
         #TODO send email
         
+        Emailing::resetPassword($user);
+        
         return response()->json(['msg' => 'Recupero de contraseña enviado correctamente'], 200);
     }
 
@@ -318,11 +346,10 @@ class Authcontroller extends Controller
      */
     public function resetPassword(Request $request)
     {
-        $params = $request->only('email','password','token');
+        $params = $request->only('password','token');
         
         #verify is the request has all the required fields
         $validator = validator($params, [
-            'email' => 'required|email',
             'password' => 'required|min:6',
             'token' => 'required'
         ]);
@@ -332,16 +359,48 @@ class Authcontroller extends Controller
         }
 
         #get user data from database    
-        $user = User::with(['role'])->where('email', $params['email'])->where('password_reset_token',$params['token'])->first();
+        $user = User::with(['role'])->where('password_reset_token',$params['token'])->first();
             
         if(!$user){
             return response()->json(['error' => 'Token inválido'], 401);
         }
 
         $user->password = md5($params['password']);
+        $user->password_reset_token = null;
         $user->save();
        
         return response()->json(['msg' => 'Contraseña actualizada correctamente'], 200);
+    }
+
+
+    
+    /**
+     * resend email
+     *
+     * @return JsonResponse
+     */
+    public function resendEmail(Request $request)
+    {
+        $params = $request->only('email');
+        
+        #verify is the request has all the required fields
+        $validator = validator($params, [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $params['email'])->first();
+
+        if(!$user){
+            return response()->json(['error' => 'Email no registrado'], 400);
+        }
+
+        Emailing::verifyEmail($user);
+       
+        return response()->json(['msg' => 'Email reenviado'], 200);
     }
 
 }

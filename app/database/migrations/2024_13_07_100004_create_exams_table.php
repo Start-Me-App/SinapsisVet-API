@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
-            $table->integer('course_id');
+            $table->integer('course_id')->nullable();
+            $table->integer('lesson_id')->nullable();
             $table->string('name');
             $table->integer('active');
         });

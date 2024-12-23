@@ -15,9 +15,15 @@ return new class extends Migration
             $table->id();
             $table->integer('course_id');
             $table->string('name');
-            $table->string('video_url');
-            $table->string('description');
+            $table->string('video_url')->nullable();
+            $table->longText('description');
             $table->integer('active');
+            $table->integer('professor_id');
+
+            $table->date('date')->nullable();
+            $table->time('time')->nullable();
+            $table->bigInteger('zoom_meeting_id')->nullable();
+            $table->string('zoom_passcode')->nullable();
 
             #$table->foreign('course_id')->references('id')->on('courses');
         });

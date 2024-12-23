@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Carbon\Carbon;
 class Lessons extends Model
 {
     use HasFactory;
@@ -30,10 +30,18 @@ class Lessons extends Model
         'name',
         'description',
         'active',
-        'video_url'
+        'video_url',
+        'professor_id',
+        'date',
+        'time',
+        'zoom_meeting_id',
+        'zoom_passcode'
     ];
-   
 
+    #hidden fields
+    protected $hidden = ['professor_id'];
+
+   
     public function course()
     {
         return $this->hasOne(Courses::class, 'id', 'course_id');
@@ -44,4 +52,13 @@ class Lessons extends Model
         return $this->hasMany(Materials::class, 'lesson_id', 'id');
     }
 
+    public function professor()
+    {
+        return $this->hasOne(User::class, 'id', 'professor_id');
+    }
+
+    public function exam()
+    {
+        return $this->hasOne(Exams::class, 'lesson_id', 'id');
+    }
 }

@@ -33,6 +33,7 @@ class Results extends Model
         'exam_id',
         'user_id',
         'final_grade',
+        'date'
     ];
 
     protected $appends = ['approved'];

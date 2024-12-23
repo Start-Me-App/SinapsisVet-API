@@ -7,11 +7,15 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, User, Workshops};
+use App\Models\{Courses, User, Workshops,Materials};
 
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
+
+use App\Support\UploadServer;
+
+use Carbon\Carbon;
 
 class WorkshopsController extends Controller
 {   
@@ -30,8 +34,7 @@ class WorkshopsController extends Controller
             'course_id' => 'required',
             'name' => 'required',
             'description' => 'required',
-            'active' => 'required|integer',
-            'video_url' => 'required'
+            'active' => 'required|integer'
         ]);
 
         if ($validator->fails()) {
@@ -46,16 +49,47 @@ class WorkshopsController extends Controller
             return response()->json(['error' => 'El curso no existe'], 409);
         }
 
+        $zoom_meeting_id = isset($data['zoom_meeting_id']) ? $data['zoom_meeting_id'] : null;   
+        $zoom_passcode = isset($data['zoom_passcode']) ? $data['zoom_passcode'] : null;
+
+        $date = isset($data['date']) ? $data['date'] : null;
+        $time = isset($data['time']) ? $data['time'] : null;
+
         $workshop = new Workshops();
         $workshop->course_id = $data['course_id'];
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
-        $workshop->video_url = $data['video_url'];
+        $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+        $workshop->zoom_meeting_id = $zoom_meeting_id;
+        $workshop->zoom_passcode = $zoom_passcode;
+        $workshop->date = $date;
+        $workshop->time = $time;
 
 
         if($workshop->save()){
-            return response()->json(['message' => 'Taller creada correctamente', 'data' => $workshop ], 200);
+
+             #get materials from request
+                // Retrieve all files from 'materials' input field
+                $materials = $request->file('materials');
+               
+                if ($materials && is_array($materials)) {
+                    foreach ($materials as $file) {
+                    
+                        $path = UploadServer::uploadFile($file, 'workshop/'.$workshop->id.'/materials');
+
+                        $material = new Materials();
+                        $material->workshop_id = $workshop->id;
+                        $material->file_path = $path;
+                        $material->name = $file->getClientOriginalName();
+                        $material->active = 1;
+                        $material->save();
+
+                    }
+                }
+            $workshop_aux = Workshops::with(['materials'])->where('id',$workshop->id)->first();    
+
+            return response()->json(['message' => 'Taller creada correctamente', 'data' => $workshop_aux ], 200);
         }
 
         return response()->json(['error' => 'Error al crear la Taller'], 500);
@@ -76,8 +110,7 @@ class WorkshopsController extends Controller
         $validator = validator($data, [
             'name' => 'required',
             'description' => 'required',
-            'active' => 'required|integer',
-            'video_url' => 'required'
+            'active' => 'required|integer'
         ]);
 
         if ($validator->fails()) {
@@ -90,13 +123,50 @@ class WorkshopsController extends Controller
             return response()->json(['error' => 'El taller no existe'], 409);
         }
 
+        $zoom_meeting_id = isset($data['zoom_meeting_id']) ? $data['zoom_meeting_id'] : null;   
+        $zoom_passcode = isset($data['zoom_passcode']) ? $data['zoom_passcode'] : null;
+        if(isset($data['date'])){
+            $workshop->date = Carbon::parse($data['date'])->format('Y-m-d');
+        }
+        if(isset($data['time']) && isset($data['date'])){
+            $workshop->time = Carbon::parse($data['date'].' '.$data['time'])->format('H:i:s');
+        }
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
-        $workshop->video_url = $data['video_url'];
-
+        $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+        $workshop->zoom_meeting_id = $zoom_meeting_id;
+        $workshop->zoom_passcode = $zoom_passcode;
+  
 
         if($workshop->save()){
+
+            $materials = $request->input('materials');
+            $new_materials = $request->file('new_materials');
+            $array_ids = [];
+            if ($new_materials) {
+                foreach ($new_materials as $file) {
+                    if(is_file($file)){
+                    
+                        $path = UploadServer::uploadFile($file, 'workshop/'.$workshop->id.'/materials');
+
+                        $material = new Materials();
+                        $material->workshop_id = $workshop->id;
+                        $material->file_path = $path;
+                        $material->name = $file->getClientOriginalName();
+                        $material->active = 1;
+                        $material->save();
+                        $array_ids[] = $material->id;                           
+                    }
+                }
+            }
+            if($materials){
+                foreach($materials as $material){
+                    $array_ids[] = $material['id'];
+                }
+            }
+            Materials::where('workshop_id',$workshop_id)->whereNotIn('id',$array_ids)->delete();
+            $workshop = Workshops::with('materials')->where('id',$workshop_id)->first();
             return response()->json(['message' => 'Taller actualizado correctamente', 'data' => $workshop ], 200);
         }
 
@@ -116,12 +186,11 @@ class WorkshopsController extends Controller
         $workshop = Workshops::find($workshop_id);   
         
         if(!$workshop){
-            return response()->json(['error' => 'Taller no encontrada'], 404);
+            return response()->json(['error' => 'Taller no encontrado'], 404);
         }
-        $workshop->active = 0;
 
-        if($workshop->save()){
-            return response()->json(['message' => 'Taller eliminada correctamente'], 200);
+        if($workshop->delete()){
+            return response()->json(['message' => 'Taller eliminado correctamente'], 200);
         }   
         return response()->json(['error' => 'Error al eliminar la Taller'], 500);
     }
@@ -137,7 +206,7 @@ class WorkshopsController extends Controller
     public function getWorkshop(Request $request,$workshop_id)
     {
         $data = $request->all();
-        $workshop = Workshops::find($workshop_id);   
+        $workshop = Workshops::with(['materials'])->find($workshop_id);   
         
         if(!$workshop){
             return response()->json(['error' => 'Taller no encontrada'], 404);

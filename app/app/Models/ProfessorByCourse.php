@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Workshops extends Model
+class ProfessorByCourse extends Model
 {
     use HasFactory;
     
     public $timestamps = false;
 
+    
+    protected $table = 'professor_by_course';
     
      /**
      * The primary key associated with the table.
@@ -27,25 +29,18 @@ class Workshops extends Model
      */
     protected $fillable = [
         'course_id',
-        'name',
-        'description',
-        'active',
-        'video_url',
-        'date',
-        'time',
-        'zoom_meeting_id',
-        'zoom_passcode'
+        'professor_id'
     ];
+
+    #hide professor_id
+    protected $hidden = ['professor_id','course_id','id'];
+
+
+    public function professor()
+    {
+        return $this->hasOne(User::class, 'id', 'professor_id');
+    }
    
 
-    public function course()
-    {
-        return $this->hasOne(Courses::class, 'id', 'course_id');
-    }
-
-    public function materials()
-    {
-        return $this->hasMany(Materials::class, 'workshop_id', 'id');
-    } 
 
 }

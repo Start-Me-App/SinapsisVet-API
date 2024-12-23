@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Workshops extends Model
+class ShoppingCartContent extends Model
 {
     use HasFactory;
     
     public $timestamps = false;
 
+    
+    protected $table = 'shopping_cart_content';
     
      /**
      * The primary key associated with the table.
@@ -27,14 +29,8 @@ class Workshops extends Model
      */
     protected $fillable = [
         'course_id',
-        'name',
-        'description',
-        'active',
-        'video_url',
-        'date',
-        'time',
-        'zoom_meeting_id',
-        'zoom_passcode'
+        'with_workshop',
+        'shopping_cart_id'
     ];
    
 
@@ -43,9 +39,6 @@ class Workshops extends Model
         return $this->hasOne(Courses::class, 'id', 'course_id');
     }
 
-    public function materials()
-    {
-        return $this->hasMany(Materials::class, 'workshop_id', 'id');
-    } 
+ 
 
 }

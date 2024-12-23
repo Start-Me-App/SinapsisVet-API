@@ -38,13 +38,25 @@ class Materials extends Model
 
     public function getFilePathUrlAttribute()
     {
-        return env('STATIC_URL') . $this->attributes['file_path'];
+        $path = explode('/', $this->attributes['file_path']);
+
+        if(count($path) <= 2){
+            return null;
+        }
+
+        return env('STATIC_URL') .'/api/'.$path[2].'/materials/'.$path[3].'/'.$path[5];
+        
     }
    
     
-    public function lesson()
+    public function lessons()
     {
         return $this->hasOne(Lessons::class, 'id', 'lesson_id');
+    }
+
+    public function workshop()
+    {
+        return $this->hasOne(Workshops::class, 'id', 'workshop_id');
     }
 
 }
