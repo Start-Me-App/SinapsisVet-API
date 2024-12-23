@@ -241,14 +241,17 @@ class UserController extends Controller
         }
 
         if(isset($data['cv_file'])){
-
             $cv_path = UploadServer::uploadFile($data['cv_file'],'cvs');
             $data['cv_path'] = $cv_path;
+        }else{
+            $data['cv_path'] = null;
         }
 
         if(isset($data['profile_photo'])){
             $photo_path = UploadServer::uploadFile($data['profile_photo'],'photos');
             $data['photo_path'] = $photo_path;
+        }else{
+            $data['photo_path'] = null;
         }
 
         if(isset($data['description'])){
