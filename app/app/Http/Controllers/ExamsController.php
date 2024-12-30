@@ -170,7 +170,7 @@ class ExamsController extends Controller
     }
 
      /**
-     * delete lesson 
+     * delete exam 
      *
      * @param $provider
      * @return JsonResponse
@@ -183,9 +183,8 @@ class ExamsController extends Controller
         if(!$exam){
             return response()->json(['error' => 'Examen no encontrado'], 404);
         }
-        $exam->active = 0;
 
-        if($exam->save()){
+        if($exam->delete()){
             return response()->json(['message' => 'Examen eliminado correctamente'], 200);
         }   
         return response()->json(['error' => 'Error al eliminar el examen'], 500);
