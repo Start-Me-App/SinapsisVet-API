@@ -47,7 +47,7 @@ services:
       - ./docker/certbot/conf:/etc/letsencrypt  # Certificados SSL de Let's Encrypt
       - ./docker/certbot/www:/var/www/certbot  # Carpeta de autenticación para Certbot
       - ./front:/usr/share/nginx/html
-      - ./front-desarrollo:/user/share/nginx/html-gamma
+      - ./front-desarrollo:/usr/share/nginx/html-gamma
 
     networks:
       - sinapsisvet-api-laravel-network
