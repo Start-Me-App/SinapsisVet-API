@@ -496,6 +496,7 @@ class ExamsController extends Controller
                 'user_id' => $user->id,
                 'exam_id' => $exam_id,
                 'final_grade' => $final_grade,
+                'date' => date('Y-m-d')
             ]);
         }
 
