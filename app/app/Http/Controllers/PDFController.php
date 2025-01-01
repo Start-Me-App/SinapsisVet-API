@@ -43,23 +43,23 @@ class PDFController extends Controller
             if(!$result || !$result->approved ){
                 return response()->json(['message' => 'No aprobaste todos los examenes del curso'], 409);
             }
-        }
+        } 
 
         $course = Courses::where('id',$data['course_id'])->first();
 
 
-        $date = date('d/m/Y', strtotime($date));
+       # $date = date('d/m/Y', strtotime($date));
         
         $data = [
             'title' => $course->title,
-            'date' => $date,
-            'student' => $student->name,
-            'course_data' => $course->description
+            'subtitle' => $course->subtitle,
+            'student' => $student->name.' '.$student->lastname
         ];
 
-        $pdf = PDF::loadView('myPDF', $data)->setPaper('a4', 'landscape');
+        $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
 
-        return $pdf->download('document.pdf');
+        return $pdf->download('certificado-de-aprobacion-'.str_replace(' ','-',$student->title).'.pdf');
+
     }
 
 
@@ -91,18 +91,18 @@ class PDFController extends Controller
             if(!$lesson->viewed){
                 return response()->json(['message' => 'No viste todas las lecciones del curso'], 409);
             }
-        }
+        } 
 
         $data = [
             'title' => $course->title,
+            'subtitle' => $course->subtitle,
             'date' => date('d/m/Y'),
-            'student' => $student->name,
+            'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description
         ];
+        $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
 
-        $pdf = PDF::loadView('myPDF', $data)->setPaper('a4', 'landscape');
-
-        return $pdf->download('document.pdf');
+        return $pdf->download('certificado-de-asistencia-'.str_replace(' ','-',$student->title).'.pdf');
     }
 
 
@@ -130,15 +130,16 @@ class PDFController extends Controller
 
 
         $data = [
-            'title' => $course->title,
+            'title' => 'Taller de '.$course->title,
             'date' => date('d/m/Y'),
-            'student' => $student->name,
-            'course_data' => $course->description
+            'student' => $student->name .' '.$student->lastname,
+            'course_data' => $course->description,
+            'subtitle' => $course->subtitle
         ];
 
-        $pdf = PDF::loadView('myPDF', $data)->setPaper('a4', 'landscape');
-
-        return $pdf->download('document.pdf');
+        $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
+        
+        return $pdf->download('certificado-de-taller-'.str_replace(' ','-',$student->title).'.pdf');
     }
 
 
