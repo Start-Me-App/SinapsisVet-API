@@ -53,7 +53,8 @@ class PDFController extends Controller
         $data = [
             'title' => $course->title,
             'subtitle' => $course->subtitle,
-            'student' => $student->name.' '.$student->lastname
+            'student' => $student->name.' '.$student->lastname,
+            'type' => 'aprobado'
         ];
 
         $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
@@ -98,7 +99,8 @@ class PDFController extends Controller
             'subtitle' => $course->subtitle,
             'date' => date('d/m/Y'),
             'student' => $student->name .' '.$student->lastname,
-            'course_data' => $course->description
+            'course_data' => $course->description,
+            'type' => 'asistido'
         ];
         $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
 
@@ -134,7 +136,8 @@ class PDFController extends Controller
             'date' => date('d/m/Y'),
             'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description,
-            'subtitle' => $course->subtitle
+            'subtitle' => $course->subtitle,
+            'type' => 'completado'
         ];
 
         $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');

@@ -152,7 +152,7 @@
 
       <!-- You can also replace the text below with dynamic content -->
       <div class="course-text">
-        Ha asistido al curso {{$title}} <strong>impartido por Sinapsis Vet</strong> 
+        Ha {{$type}} al curso {{$title}} <strong>impartido por Sinapsis Vet</strong> 
       </div>
 
       <!-- Firma -->
