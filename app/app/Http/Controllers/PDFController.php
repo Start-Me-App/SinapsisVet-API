@@ -6,8 +6,9 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\{Exams,User,Results,Courses,Lessons,Workshops};
 use App\Support\TokenManager;
-
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+
 class PDFController extends Controller
 {
     public function generateApprovedPdf(Request $request)
@@ -27,7 +28,7 @@ class PDFController extends Controller
         $exams = Exams::where('course_id',$data['course_id'])->get();
 
 
-        foreach ($exams as $exam) {
+       foreach ($exams as $exam) {
 
             $result = Results::where('user_id', $student->id)->where('exam_id', $exam->id)->first();
 
@@ -43,7 +44,7 @@ class PDFController extends Controller
             if(!$result || !$result->approved ){
                 return response()->json(['message' => 'No aprobaste todos los examenes del curso'], 409);
             }
-        } 
+        }  
 
         $course = Courses::where('id',$data['course_id'])->first();
 
@@ -51,15 +52,14 @@ class PDFController extends Controller
        # $date = date('d/m/Y', strtotime($date));
         
         $data = [
-            'title' => $course->title,
+            'title' => strtoupper($course->title),
             'subtitle' => $course->subtitle,
             'student' => $student->name.' '.$student->lastname,
-            'type' => 'aprobado'
+            'type' => 'aprobado',
+            'date' => $this->formatearFechaEscrita($course->date)
         ];
 
-        $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
-
-        return $pdf->download('certificado-de-aprobacion-'.str_replace(' ','-',$student->title).'.pdf');
+        return $data;
 
     }
 
@@ -90,21 +90,23 @@ class PDFController extends Controller
             
         foreach ($list as $lesson) {
             if(!$lesson->viewed){
-                return response()->json(['message' => 'No viste todas las lecciones del curso'], 409);
+               # return response()->json(['message' => 'No viste todas las lecciones del curso'], 409);
             }
         } 
+
+
 
         $data = [
             'title' => $course->title,
             'subtitle' => $course->subtitle,
-            'date' => date('d/m/Y'),
+            'date' => $this->formatearFechaEscrita($course->date),
             'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description,
             'type' => 'asistido'
         ];
-        $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
 
-        return $pdf->download('certificado-de-asistencia-'.str_replace(' ','-',$student->title).'.pdf');
+        return $data;
+
     }
 
 
@@ -130,23 +132,46 @@ class PDFController extends Controller
             throw new \Exception('No hay taller para este curso');
         }
 
+       
+
 
         $data = [
-            'title' => 'Taller de '.$course->title,
-            'date' => date('d/m/Y'),
+            'title' => strtoupper('Taller de '.$course->title),
+            'date' => $this->formatearFechaEscrita($workshop->date),
             'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description,
             'subtitle' => $course->subtitle,
-            'type' => 'completado'
+            'type' => 'asistido'
         ];
 
-        $pdf = PDF::loadView('certificate', $data)->setPaper('a4', 'landscape');
-        
-        return $pdf->download('certificado-de-taller-'.str_replace(' ','-',$student->title).'.pdf');
+        return $data;
     }
 
 
-
+    private function formatearFechaEscrita($fecha) {
+        $meses = array(
+            '01' => 'enero',
+            '02' => 'febrero', 
+            '03' => 'marzo',
+            '04' => 'abril',
+            '05' => 'mayo',
+            '06' => 'junio',
+            '07' => 'julio',
+            '08' => 'agosto',
+            '09' => 'septiembre',
+            '10' => 'octubre',
+            '11' => 'noviembre',
+            '12' => 'diciembre'
+        );
+        
+        $fecha = Carbon::parse($fecha);
+        $dia = $fecha->format('d');
+        $mes = $meses[$fecha->format('m')];
+        $anio = $fecha->format('Y');
+        
+        return $dia . ' de ' . $mes . ' de ' . $anio;
+    }
+    
 
 
 }
