@@ -39,7 +39,8 @@ class CoursesController extends Controller
             'inscription_date' => 'required',
             'objective' => 'required',
             'presentation' => 'required',
-            'professors' => 'required'
+            'professors' => 'required',
+            'academic_duration' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -114,6 +115,8 @@ class CoursesController extends Controller
         $course->subtitle = $subtitle;
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
+        $course->academic_duration = $data['academic_duration'];
+
 
         if($course->save()){
 
@@ -176,7 +179,8 @@ class CoursesController extends Controller
             'inscription_date' => 'required',
             'objective' => 'required',
             'presentation' => 'required',
-            'professors' => 'required'
+            'professors' => 'required',
+            'academic_duration' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -237,7 +241,7 @@ class CoursesController extends Controller
         $course->subtitle = $subtitle;
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
-
+        $course->academic_duration = $data['academic_duration'];
 
         foreach($data['professors'] as $professor_id){
             #validate if profesor_id is a valid user
