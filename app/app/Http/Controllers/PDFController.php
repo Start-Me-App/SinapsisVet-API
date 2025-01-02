@@ -56,7 +56,8 @@ class PDFController extends Controller
             'subtitle' => $course->subtitle,
             'student' => $student->name.' '.$student->lastname,
             'type' => 'aprobado',
-            'date' => $this->formatearFechaEscrita($course->date)
+            'date' => $this->formatearFechaEscrita($course->date),
+            'academic_duration' => $course->academic_duration
         ];
 
         return $data;
@@ -102,7 +103,8 @@ class PDFController extends Controller
             'date' => $this->formatearFechaEscrita($course->date),
             'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description,
-            'type' => 'asistido'
+            'type' => 'asistido',
+            'academic_duration' => $course->academic_duration
         ];
 
         return $data;
@@ -141,7 +143,8 @@ class PDFController extends Controller
             'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description,
             'subtitle' => $course->subtitle,
-            'type' => 'asistido'
+            'type' => 'asistido',
+            'academic_duration' => $course->academic_duration
         ];
 
         return $data;
