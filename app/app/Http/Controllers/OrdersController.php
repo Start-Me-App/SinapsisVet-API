@@ -27,7 +27,7 @@ class OrdersController extends Controller
     {   
         $params = $request->all();
       
-        $list = Order::with('orderDetails')->get();
+        $list = Order::with('user','orderDetails')->get();
 
         foreach($list as $item){          
             $total =  $item->orderDetails->sum('price');

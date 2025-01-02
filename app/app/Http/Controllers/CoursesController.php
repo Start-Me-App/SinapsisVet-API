@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse,CoursesCustomField};
+use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse,CoursesCustomField,Results};
 
 use Illuminate\Support\Facades\DB;
 
@@ -39,7 +39,8 @@ class CoursesController extends Controller
             'inscription_date' => 'required',
             'objective' => 'required',
             'presentation' => 'required',
-            'professors' => 'required'
+            'professors' => 'required',
+            'academic_duration' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -114,6 +115,8 @@ class CoursesController extends Controller
         $course->subtitle = $subtitle;
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
+        $course->academic_duration = $data['academic_duration'];
+
 
         if($course->save()){
 
@@ -176,7 +179,8 @@ class CoursesController extends Controller
             'inscription_date' => 'required',
             'objective' => 'required',
             'presentation' => 'required',
-            'professors' => 'required'
+            'professors' => 'required',
+            'academic_duration' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -237,7 +241,7 @@ class CoursesController extends Controller
         $course->subtitle = $subtitle;
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
-
+        $course->academic_duration = $data['academic_duration'];
 
         foreach($data['professors'] as $professor_id){
             #validate if profesor_id is a valid user
@@ -580,7 +584,19 @@ class CoursesController extends Controller
                     unset($workshop->materials);
                 }
             }else{
-            
+                
+                $lessons = Lessons::where('course_id',$course_id)->get();
+                $lessons_ids = [];
+                foreach($lessons as $lesson){
+                    $lessons_ids[] = $lesson->id;
+                }
+                $viewed_lessons = DB::table('view_lesson')->where('user_id',$user->id)->whereIn('lesson_id',$lessons_ids)->get();
+                if(count($viewed_lessons) == count($lessons)){
+                    $list->all_lessons_viewed = 1;
+                }else{
+                    $list->all_lessons_viewed = 0;
+                }
+
                 return response()->json(['data' => $list], 200);
             }
         }else{
@@ -643,7 +659,7 @@ class CoursesController extends Controller
                 }
                 return response()->json(['data' => $list], 200);
             }
-          
+
             $list = Lessons::with(['materials','professor','exam'])
             ->leftJoin('view_lesson', function($join) use ($user) {
                 $join->on('lessons.id', '=', 'view_lesson.lesson_id')
@@ -652,6 +668,21 @@ class CoursesController extends Controller
             ->select('lessons.*', DB::raw('COALESCE(view_lesson.id, 0) as viewed'))
             ->where('course_id', $course_id)
             ->get();
+
+            foreach($list as $lesson){
+                if($lesson->exam){
+                    $exam_result = Results::where('user_id',$user->id)->where('exam_id',$lesson->exam->id)->first();
+                    if($exam_result){
+                        if($exam_result->final_grade >= 6){
+                            $lesson->exam->approved = 1;
+                        }else{
+                            $lesson->exam->approved = 0;
+                        }
+                    }else{
+                        $lesson->exam->approved = 0;
+                    }
+                }
+            }
         }
 
 

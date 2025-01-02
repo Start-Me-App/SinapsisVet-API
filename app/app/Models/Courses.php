@@ -37,7 +37,8 @@ class Courses extends Model
         'inscription_date',
         'subtitle',
         'destined_to',
-        'certifications'
+        'certifications',
+        'academic_duration'
 
     ];
 
