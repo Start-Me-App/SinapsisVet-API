@@ -55,16 +55,26 @@ class WorkshopsController extends Controller
         $date = isset($data['date']) ? $data['date'] : null;
         $time = isset($data['time']) ? $data['time'] : null;
 
+      
         $workshop = new Workshops();
         $workshop->course_id = $data['course_id'];
         $workshop->name = $data['name'];
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
         $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
+    
         $workshop->zoom_meeting_id = $zoom_meeting_id;
         $workshop->zoom_passcode = $zoom_passcode;
         $workshop->date = $date;
         $workshop->time = $time;
+
+        if(isset($data['professor_id'])){
+            $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
+            if(!$profesor){
+                return response()->json(['error' => 'Profesor no encontrado'], 409);
+            }
+            $workshop->professor_id = $profesor->id;
+        }
 
 
         if($workshop->save()){
@@ -87,7 +97,7 @@ class WorkshopsController extends Controller
 
                     }
                 }
-            $workshop_aux = Workshops::with(['materials'])->where('id',$workshop->id)->first();    
+            $workshop_aux = Workshops::with(['materials','professor'])->where('id',$workshop->id)->first();    
 
             return response()->json(['message' => 'Taller creada correctamente', 'data' => $workshop_aux ], 200);
         }
@@ -138,6 +148,13 @@ class WorkshopsController extends Controller
         $workshop->zoom_meeting_id = $zoom_meeting_id;
         $workshop->zoom_passcode = $zoom_passcode;
   
+        if(isset($data['professor_id'])){
+            $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
+            if(!$profesor){
+                return response()->json(['error' => 'Profesor no encontrado'], 409);
+            }
+            $workshop->professor_id = $profesor->id;
+        }
 
         if($workshop->save()){
 
@@ -166,7 +183,7 @@ class WorkshopsController extends Controller
                 }
             }
             Materials::where('workshop_id',$workshop_id)->whereNotIn('id',$array_ids)->delete();
-            $workshop = Workshops::with('materials')->where('id',$workshop_id)->first();
+            $workshop = Workshops::with('materials','professor')->where('id',$workshop_id)->first();
             return response()->json(['message' => 'Taller actualizado correctamente', 'data' => $workshop ], 200);
         }
 
@@ -206,7 +223,7 @@ class WorkshopsController extends Controller
     public function getWorkshop(Request $request,$workshop_id)
     {
         $data = $request->all();
-        $workshop = Workshops::with(['materials'])->find($workshop_id);   
+        $workshop = Workshops::with(['materials','professor'])->find($workshop_id);   
         
         if(!$workshop){
             return response()->json(['error' => 'Taller no encontrada'], 404);

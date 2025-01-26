@@ -48,4 +48,8 @@ class Workshops extends Model
         return $this->hasMany(Materials::class, 'workshop_id', 'id');
     } 
 
+    public function professor()
+    {
+        return $this->hasOne(User::class, 'id', 'professor_id');
+    }
 }
