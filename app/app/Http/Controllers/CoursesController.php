@@ -757,7 +757,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Workshops::where('course_id',$course_id)->where('active',1)->get();
+            $list = Workshops::with(['professor'])->where('course_id',$course_id)->where('active',1)->get();
             foreach ($list as $w) {
                 $w->video_url = null;
             }
