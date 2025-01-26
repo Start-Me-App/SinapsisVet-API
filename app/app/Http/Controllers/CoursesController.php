@@ -339,7 +339,7 @@ class CoursesController extends Controller
     public function getCourse(Request $request,$course_id)
     {   
         
-        $list = Courses::with(['category','professors','lessons.materials','lessons.professor','workshops','exams','inscriptions.student','custom_fields'])->find($course_id);
+        $list = Courses::with(['category','professors','lessons.materials','lessons.professor','workshops.professor','exams','inscriptions.student','custom_fields'])->find($course_id);
       
         return response()->json(['data' => $list], 200);
     }
@@ -382,7 +382,7 @@ class CoursesController extends Controller
     public function getWorkshopsByCourse(Request $request,$course_id)
     {   
 
-        $list = Workshops::with(['materials'])->where('course_id',$course_id)->get();
+        $list = Workshops::with(['materials','professor'])->where('course_id',$course_id)->get();
       
         return response()->json(['data' => $list], 200);
     }
@@ -502,7 +502,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Courses::with(['category','professors','lessons.professor','workshops','custom_fields'])->orderBy('id','desc')->get();
+            $list = Courses::with(['category','professors','lessons.professor','workshops.professor','custom_fields'])->orderBy('id','desc')->get();
             foreach($list as $course){
                 foreach ($course->lessons as $lesson) {
                     $lesson->video_url = null;
@@ -520,7 +520,7 @@ class CoursesController extends Controller
         }else{
             $user = TokenManager::getUserFromToken($accessToken);
             #order by id desc
-            $list = Courses::with(['category','professors','lessons.professor','workshops','custom_fields'])
+            $list = Courses::with(['category','professors','lessons.professor','workshops.professor','custom_fields'])
             ->select('courses.*', 'inscriptions.id as inscribed')
             ->leftJoin('inscriptions', function($join) use ($user) {
                 $join->on('courses.id', '=', 'inscriptions.course_id')
@@ -564,7 +564,7 @@ class CoursesController extends Controller
      */
     public function listCourse(Request $request,$course_id)
     {   
-        $list = Courses::with(['category','professors','lessons.professor','workshops','custom_fields'])->find($course_id);
+        $list = Courses::with(['category','professors','lessons.professor','workshops.professor','custom_fields'])->find($course_id);
 
         $accessToken = TokenManager::getTokenFromRequest();
         if(!is_null($accessToken)){
@@ -776,7 +776,7 @@ class CoursesController extends Controller
                 return response()->json(['data' => $list], 200);
             }
           
-            $list = Workshops::with(['materials'])->where('course_id',$course_id)->where('active',1)->get();
+            $list = Workshops::with(['materials','professor'])->where('course_id',$course_id)->where('active',1)->get();
       
             return response()->json(['data' => $list], 200);
         }
