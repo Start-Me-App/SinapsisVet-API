@@ -34,6 +34,7 @@ class StripeWebhookController extends Controller
         }
 
         // Maneja el evento
+        Log::info('Evento recibido:', ['event' => $event->type]);
         switch ($event->type) {
             case 'payment_intent.succeeded':
                 // Lógica para manejar un pago exitoso
