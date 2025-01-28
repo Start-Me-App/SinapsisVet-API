@@ -37,7 +37,6 @@ class StripeWebhookController extends Controller
         Log::info('Evento recibido:', ['event' => $event->type]);
         switch ($event->type) {
             case 'payment_intent.succeeded':
-                // Lógica para manejar un pago exitoso
                 $responseStripe = ResponseStripe::where('client_secret', $event->data->object->client_secret)->first();
                 $responseStripe->status = 'approved';
                 $responseStripe->approved_at = now();
@@ -72,22 +71,21 @@ class StripeWebhookController extends Controller
                 $paymentIntent = $event->data->object;
                 Log::info('Pago exitoso:', ['payment_intent' => $paymentIntent->id]);
                 break;
-
-            case 'charge.refunded':
-                // Lógica para manejar un reembolso
-                $charge = $event->data->object;
-                Log::info('Reembolso realizado:', ['charge' => $charge->id]);
-                break;
-
             case 'payment_intent.payment_failed':
-                // Lógica para manejar un pago fallido
-                $paymentIntent = $event->data->object;
-                Log::info('Pago fallido:', ['payment_intent' => $paymentIntent->id]);
-                break;
+                $responseStripe = ResponseStripe::where('client_secret', $event->data->object->client_secret)->first();
+                $responseStripe->status = 'failed';
+                $responseStripe->save();
 
-            // Puedes agregar más casos según tus necesidades
+
+                $order = Order::where('id', $responseStripe->order_id)->first();
+                $order->status = 'failed';
+                $order->date_closed = date('Y-m-d H:i:s');
+                $order->save();
+                
+                $paymentIntent = $event->data->object;
+                Log::info('Pago fallido:', ['payment_intent' => $paymentIntent]);
+                break;
             default:
-                // Evento no manejado
                 Log::info('Evento no manejado:', ['type' => $event->type]);
                 break;
         }
