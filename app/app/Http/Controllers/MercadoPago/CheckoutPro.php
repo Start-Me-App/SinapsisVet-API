@@ -166,8 +166,8 @@ final class CheckoutPro extends MercadoPago
         ];
 
         $backUrls = array(
-            'success' => $_ENV['URL_WEB'] . 'mercadopago/success',
-            'failure' => $_ENV['URL_WEB'] . 'mercadopago/failed'
+            'success' => $_ENV['URL_WEB'] . 'checkout',
+            'failure' => $_ENV['URL_WEB'] . 'checkout'
         );
 
         $request = [
