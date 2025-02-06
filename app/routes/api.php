@@ -15,6 +15,7 @@ use App\Http\Controllers\MercadoPago\MercadoPago;
 use App\Http\Controllers\MercadoPago\CheckoutPro;
 use App\Http\Controllers\MercadoPago\WebHook;
 use App\Http\Controllers\OrdersController;
+use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentController};
 
 
     Route::post('/login', [AuthController::class,'login']);
@@ -48,9 +49,16 @@ use App\Http\Controllers\OrdersController;
     Route::get('workshop', [PDFController::class, 'generateWorkshopPdf']);
 
 
+    #mercadopago
     
     Route::post('/mercadopago/processPreference', [CheckoutPro::class,'processPreference']);
     Route::post('/mercadopago/webhook', [WebHook::class,'notification']);
+
+    #stripe
+    Route::post('/stripe/charge', [Charges::class,'charge']);
+    Route::post('/stripe/paymentIntent', [PaymentIntentController::class,'createPaymentIntent']);
+    Route::post('/stripe/webhook', [StripeWebhookController::class,'handleWebhook']);
+
 
     #Courses
 

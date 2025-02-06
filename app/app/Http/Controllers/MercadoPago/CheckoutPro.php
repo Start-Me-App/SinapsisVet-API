@@ -64,8 +64,8 @@ final class CheckoutPro extends MercadoPago
 
               // Fill the data about the product(s) being pruchased
             $product = [
-                "title" => "Cursos y Talleres",
-                "description" => "Cursos y Talleres",
+                "title" => "SinapsisVet Curso",
+                "description" => "Curso de SinapsisVet",
                 "currency_id" => "ARS",
                 "quantity" => 1,
                 "unit_price" => $total
@@ -166,8 +166,8 @@ final class CheckoutPro extends MercadoPago
         ];
 
         $backUrls = array(
-            'success' => $_ENV['URL_WEB'] . 'mercadopago/success',
-            'failure' => $_ENV['URL_WEB'] . 'mercadopago/failed'
+            'success' => $_ENV['URL_WEB'] . 'checkout',
+            'failure' => $_ENV['URL_WEB'] . 'checkout'
         );
 
         $request = [

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Support\TokenManager;
 
 use App\Http\Controllers\MercadoPago\CheckoutPro;
-
+use App\Http\Controllers\Stripe\PaymentIntentController;
 class ShoppingCartController extends Controller
 {   
 
@@ -227,6 +227,7 @@ class ShoppingCartController extends Controller
        switch($paymentMethodId){
         case 1: #Mercado Pago
                 #creo la preferencia de pago
+                $client_secret = null;
                 $checkoutPro = new CheckoutPro();
                 $preference = $checkoutPro->processPreference(floatval($total),$user->id,$order->id);                
                 if(!$preference){
@@ -237,6 +238,12 @@ class ShoppingCartController extends Controller
                 }
             break;
         case 2: #Transferencia
+            $preference = null;
+            $client_secret = null;
+            break;
+        case 3: #Stripe
+            $paymentIntent = new PaymentIntentController();
+            $client_secret = $paymentIntent->createPaymentIntent(floatval($total),$user->id,$order->id);
             $preference = null;
             break;
        }
@@ -252,7 +259,7 @@ class ShoppingCartController extends Controller
         
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
-        return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order], 200);
+        return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order, 'client_secret' => $client_secret], 200);
 
     }
 
