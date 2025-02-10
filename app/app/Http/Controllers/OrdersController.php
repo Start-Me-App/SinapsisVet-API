@@ -39,7 +39,7 @@ class OrdersController extends Controller
 
     public function getOrderDetails($order_id)
     {
-        $order = OrderDetail::with('course.workshops')->where('order_id', $order_id)->get();
+        $order = OrderDetail::with('course.workshops','order')->where('order_id', $order_id)->get();
         return response()->json(['data' => $order], 200);
     }
 

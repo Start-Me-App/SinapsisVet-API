@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail};
+use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail,Course};
 
 use Illuminate\Support\Facades\DB;
 
@@ -71,6 +71,17 @@ class ShoppingCartController extends Controller
         if($inscripcion){
             return response()->json(['message' => 'Ya estás inscripto en este curso'], 400);
         }
+
+        #check if course is active
+        $course = Course::find($request->course_id);
+        if(!$course){
+            return response()->json(['message' => 'Curso no encontrado'], 404);
+        }   
+
+        if($course->active == 0){
+            return response()->json(['message' => 'Este curso no está activo'], 400);
+        }   
+        
 
         #check if course has workshops
         $workshops = Workshops::where('course_id', $request->course_id)->get();

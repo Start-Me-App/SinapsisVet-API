@@ -118,6 +118,7 @@ class CoursesController extends Controller
         $course->academic_duration = $data['academic_duration'];
 
 
+
         if($course->save()){
 
             foreach($data['professors'] as $professor_id){
@@ -242,6 +243,12 @@ class CoursesController extends Controller
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
         $course->academic_duration = $data['academic_duration'];
+
+
+        #check if course is active
+        if(isset($data['active'])){
+            $course->active = $data['active'];
+        }
 
         foreach($data['professors'] as $professor_id){
             #validate if profesor_id is a valid user

@@ -15,8 +15,8 @@ use App\Http\Controllers\MercadoPago\MercadoPago;
 use App\Http\Controllers\MercadoPago\CheckoutPro;
 use App\Http\Controllers\MercadoPago\WebHook;
 use App\Http\Controllers\OrdersController;
-use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentController};
-
+use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentController};  
+use App\Http\Controllers\DiscountsController;
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -183,5 +183,13 @@ use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentCo
             Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder']);
         }); 
 
+
+        #create route group for discounts
+        Route::group(['prefix' => 'discounts'], function () {
+            Route::get('/', [DiscountsController::class,'getAll']);
+            Route::post('/', [DiscountsController::class,'create']);
+            Route::patch('/', [DiscountsController::class,'update']);
+            Route::delete('/{discount_id}', [DiscountsController::class,'delete']);
+        });
 
     });
