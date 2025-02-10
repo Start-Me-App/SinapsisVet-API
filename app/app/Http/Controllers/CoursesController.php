@@ -590,6 +590,7 @@ class CoursesController extends Controller
                     $workshop->zoom_passcode = null;
                     unset($workshop->materials);
                 }
+                $list->inscribed_workshop = 0;
             }else{
                 
                 $lessons = Lessons::where('course_id',$course_id)->get();
@@ -603,6 +604,8 @@ class CoursesController extends Controller
                 }else{
                     $list->all_lessons_viewed = 0;
                 }
+
+                $list->inscribed_workshop = $inscription->with_workshop;
 
                 return response()->json(['data' => $list], 200);
             }
