@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail,Course};
+use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail,Courses,Discounts};
 
 use Illuminate\Support\Facades\DB;
 
@@ -73,7 +73,7 @@ class ShoppingCartController extends Controller
         }
 
         #check if course is active
-        $course = Course::find($request->course_id);
+        $course = Courses::find($request->course_id);
         if(!$course){
             return response()->json(['message' => 'Curso no encontrado'], 404);
         }   
@@ -184,6 +184,14 @@ class ShoppingCartController extends Controller
        $order->date_paid = null;
        $order->save();
 
+        #obtengo el descuento
+        $discount = self::getDiscountsForUser();
+
+        $discount_percentage = 0;
+        if($discount){
+        $discount_percentage = $discount->discount;
+        }
+
        foreach($shoppingCart->items as $item){
            #check if user is already inscribed
            $inscripcion = Inscriptions::where('user_id', $user->id)->where('course_id', $item->course_id)->first();
@@ -195,9 +203,9 @@ class ShoppingCartController extends Controller
                    $orderDetail->order_id = $order->id;
                    $orderDetail->course_id = $item->course_id;
                    if($paymentMethodId == 1 || $paymentMethodId == 2){
-                    $orderDetail->price = env('WORKSHOP_PRICE_ARS');
+                    $orderDetail->price = env('WORKSHOP_PRICE_ARS') - (env('WORKSHOP_PRICE_ARS') * $discount_percentage / 100);
                    }else{
-                    $orderDetail->price = env('WORKSHOP_PRICE_USD');
+                    $orderDetail->price = env('WORKSHOP_PRICE_USD') - (env('WORKSHOP_PRICE_USD') * $discount_percentage / 100);
                    }
                    $orderDetail->with_workshop = $item->with_workshop;
                    $orderDetail->quantity = 1;
@@ -225,7 +233,8 @@ class ShoppingCartController extends Controller
                     $price = $item->course->price_usd;
                 }
                }
-               $orderDetail->price = $price;
+               $final_price = $price - ($price * $discount_percentage / 100);
+               $orderDetail->price = $final_price;
                $orderDetail->quantity = 1;
                $orderDetail->save();
 
@@ -234,6 +243,8 @@ class ShoppingCartController extends Controller
         
        #obtengo el total de la orden
        $total = OrderDetail::where('order_id', $order->id)->sum('price');
+
+      
      
        switch($paymentMethodId){
         case 1: #Mercado Pago
@@ -272,6 +283,44 @@ class ShoppingCartController extends Controller
 
         return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order, 'client_secret' => $client_secret], 200);
 
+    }
+
+
+    public function getDiscountsForUser()
+    {
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        #count inscriptions of user
+        $inscriptions = Inscriptions::where('user_id', $user->id)->count();
+
+        #count courses of user
+        $discounts = Discounts::where('courses_amount', '<=', $inscriptions)->orderBy('courses_amount', 'desc')->first();
+
+        if(!$discounts){
+            return  null;
+        }
+
+        return $discounts;
+    }
+
+
+    public function getDiscounts()
+    {
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        #count inscriptions of user
+        $inscriptions = Inscriptions::where('user_id', $user->id)->count();
+
+        #count courses of user
+        $discounts = Discounts::where('courses_amount', '<=', $inscriptions)->orderBy('courses_amount', 'desc')->first();
+
+        if(!$discounts){
+            return response()->json(['data' => []], 200);
+        }
+
+        return response()->json(['data' => $discounts], 200);
     }
 
 }

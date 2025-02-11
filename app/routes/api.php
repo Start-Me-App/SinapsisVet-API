@@ -87,6 +87,9 @@ use App\Http\Controllers\DiscountsController;
         Route::post('/addItem', [ShoppingCartController::class,'addItem']);
         Route::post('/removeItem', [ShoppingCartController::class,'removeItem']);
         Route::post('/process', [ShoppingCartController::class,'process']);
+
+
+        Route::get('/discounts', [ShoppingCartController::class,'getDiscounts']);
         
     });
 
