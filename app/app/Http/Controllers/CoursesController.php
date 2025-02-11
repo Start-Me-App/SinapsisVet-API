@@ -532,8 +532,7 @@ class CoursesController extends Controller
             ->leftJoin('inscriptions', function($join) use ($user) {
                 $join->on('courses.id', '=', 'inscriptions.course_id')
                      ->where('inscriptions.user_id', $user->id);
-            })
-            ->where('courses.active', 1)
+            })            
             ->orderBy('courses.id', 'desc')
             ->get();
 
