@@ -118,6 +118,7 @@ class CoursesController extends Controller
         $course->academic_duration = $data['academic_duration'];
 
 
+
         if($course->save()){
 
             foreach($data['professors'] as $professor_id){
@@ -242,6 +243,12 @@ class CoursesController extends Controller
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
         $course->academic_duration = $data['academic_duration'];
+
+
+        #check if course is active
+        if(isset($data['active'])){
+            $course->active = $data['active'];
+        }
 
         foreach($data['professors'] as $professor_id){
             #validate if profesor_id is a valid user
@@ -525,8 +532,7 @@ class CoursesController extends Controller
             ->leftJoin('inscriptions', function($join) use ($user) {
                 $join->on('courses.id', '=', 'inscriptions.course_id')
                      ->where('inscriptions.user_id', $user->id);
-            })
-            ->where('courses.active', 1)
+            })            
             ->orderBy('courses.id', 'desc')
             ->get();
 
@@ -583,6 +589,7 @@ class CoursesController extends Controller
                     $workshop->zoom_passcode = null;
                     unset($workshop->materials);
                 }
+                $list->inscribed_workshop = 0;
             }else{
                 
                 $lessons = Lessons::where('course_id',$course_id)->get();
@@ -596,6 +603,8 @@ class CoursesController extends Controller
                 }else{
                     $list->all_lessons_viewed = 0;
                 }
+
+                $list->inscribed_workshop = $inscription->with_workshop;
 
                 return response()->json(['data' => $list], 200);
             }
