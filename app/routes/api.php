@@ -60,6 +60,8 @@ use App\Http\Controllers\DiscountsController;
     Route::post('/stripe/webhook', [StripeWebhookController::class,'handleWebhook']);
 
 
+    Route::post('/cleanUpOrders', [OrdersController::class,'cleanUpOrders']);
+
     #Courses
 
     #create route group for courses

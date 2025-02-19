@@ -129,4 +129,19 @@ class OrdersController extends Controller
 
 
 
+
+    public function cleanUpOrders()
+    {   
+        #get all orders with status pending older than 2 weeks
+        $orders = Order::where('status', 'pending')->where('date_created', '<', now()->subWeek(2))->get();
+
+        foreach($orders as $order){
+            $order->status = 'annulled';
+            $order->date_closed = date('Y-m-d H:i:s');
+            $order->save();
+        }
+        return response()->json(['message' => 'Orders cleaned up'], 200);
+    }
+
+
 }
