@@ -12,7 +12,7 @@ use App\Support\TokenManager;
 
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 use Kreait\Firebase\Value\Email;
-
+use App\Helper\TelegramNotification;
 class Authcontroller extends Controller
 {
 
@@ -41,8 +41,9 @@ class Authcontroller extends Controller
      */
     public function register(Request $request)
     {
-        $params = $request->only('email', 'password','name','role_id','dob','lastname','telephone','area_code','tyc','nationality_id','gender');
-        
+        try{
+            $params = $request->only('email', 'password','name','role_id','dob','lastname','telephone','area_code','tyc','nationality_id','gender');
+            
         #verify is the request has all the required fields
         $validator = validator($params, [
             'email' => 'required|email',
@@ -97,6 +98,12 @@ class Authcontroller extends Controller
         Emailing::verifyEmail($userCreated);
 
         return response()->json(['msg' => 'Usuario creado con éxito'], 200);
+
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
         
     }
 
@@ -108,9 +115,10 @@ class Authcontroller extends Controller
      */
     public function loginSocial(Request $request, $provider)
     {
-        $validated = $this->validateProvider($provider);
-        if (!is_null($validated)) {
-            return $validated;
+        try{
+            $validated = $this->validateProvider($provider);
+            if (!is_null($validated)) {
+                return $validated;
         }
        
         $accessToken = $request->input("token-id");
@@ -165,8 +173,12 @@ class Authcontroller extends Controller
     
     
             return response()->json(['token' => $token], 200);
-        }else{
-            return response()->json(['error' => 'Error al crear el usuario'], 401);
+
+        }
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
         }
         
     }

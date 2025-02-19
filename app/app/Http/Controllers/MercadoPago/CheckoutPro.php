@@ -14,6 +14,7 @@ use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 
 use App\Support\TokenManager;
+use App\Helper\TelegramNotification;
 
 final class CheckoutPro extends MercadoPago
 {
@@ -113,7 +114,8 @@ final class CheckoutPro extends MercadoPago
             }
             return $preference;
         } catch (\Exception $exception) {
-
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($exception->getMessage());
             return ['error_message' => $exception->getMessage()];
         }
     }

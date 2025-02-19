@@ -15,6 +15,8 @@ use App\Support\TokenManager;
 
 use App\Http\Controllers\MercadoPago\CheckoutPro;
 use App\Http\Controllers\Stripe\PaymentIntentController;
+use App\Helper\TelegramNotification;
+
 class ShoppingCartController extends Controller
 {   
 
@@ -26,9 +28,9 @@ class ShoppingCartController extends Controller
      */
     public function get(Request $request)
     {
-
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user = TokenManager::getUserFromToken($accessToken);
+        try{
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user = TokenManager::getUserFromToken($accessToken);
 
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
@@ -40,6 +42,11 @@ class ShoppingCartController extends Controller
         }
         if(!$shoppingCart){
             return response()->json(['message' => 'Carrito no encontrado'], 404);
+        }
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
         }
 
         return response()->json(['data' => $shoppingCart], 200);
@@ -55,9 +62,9 @@ class ShoppingCartController extends Controller
      */
     public function addItem(Request $request)
     {
-
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user = TokenManager::getUserFromToken($accessToken);
+        try{
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user = TokenManager::getUserFromToken($accessToken);
 
         $shoppingCart = ShoppingCart::with(['items'])->where('user_id', $user->id)->where('active', 1)->first();
 
@@ -108,6 +115,12 @@ class ShoppingCartController extends Controller
 
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
+        }   
+
         return response()->json(['data' => $shoppingCart], 200);
 
     }
@@ -121,9 +134,10 @@ class ShoppingCartController extends Controller
      */
     public function removeItem(Request $request)
     {
+        try{    
 
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user = TokenManager::getUserFromToken($accessToken);
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user = TokenManager::getUserFromToken($accessToken);
 
         $shoppingCart = ShoppingCart::with(['items'])->where('user_id', $user->id)->where('active', 1)->first();
 
@@ -135,6 +149,12 @@ class ShoppingCartController extends Controller
         ShoppingCartContent::where('course_id', $request->course_id)->where('shopping_cart_id', $shoppingCart->id)->delete();
 
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
+
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
+        }   
 
         return response()->json(['data' => $shoppingCart], 200);
 
@@ -149,9 +169,10 @@ class ShoppingCartController extends Controller
      */
     public function process(Request $request)
     {
+        try{
 
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user = TokenManager::getUserFromToken($accessToken);
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user = TokenManager::getUserFromToken($accessToken);
 
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
@@ -280,6 +301,11 @@ class ShoppingCartController extends Controller
         $newShoppingCart->save();
         
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
+    }catch(\Exception $e){
+        $telegram = new TelegramNotification();
+        $telegram->toTelegram($e->getMessage());
+        return response()->json(['message' => $e->getMessage()], 500);
+    }
 
         return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order, 'client_secret' => $client_secret], 200);
 
@@ -288,8 +314,9 @@ class ShoppingCartController extends Controller
 
     public function getDiscountsForUser()
     {
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user = TokenManager::getUserFromToken($accessToken);
+        try{
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user = TokenManager::getUserFromToken($accessToken);
 
         #count inscriptions of user
         $inscriptions = Inscriptions::where('user_id', $user->id)->count();
@@ -297,13 +324,19 @@ class ShoppingCartController extends Controller
         #count courses of user
         $discounts = Discounts::where('courses_amount', '<=', $inscriptions)->orderBy('courses_amount', 'desc')->first();
 
-        if(!$discounts){
-            return  null;
+            if(!$discounts){
+                return  null;
+            }
+
+            return $discounts;
+
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return null;
         }
 
-        return $discounts;
     }
-
 
     public function getDiscounts()
     {

@@ -45,5 +45,9 @@ return [
     'secret' => env('STRIPE_SECRET'),
     'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
+    'telegram' => [
+    'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+    'chat_id' => env('TELEGRAM_CHAT_ID'), // Opcional, puedes especificar el chat_id aquí o dinámicamente en la notificación
+],
 
 ];
