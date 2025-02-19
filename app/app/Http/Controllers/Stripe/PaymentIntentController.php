@@ -8,7 +8,7 @@ use Stripe\Stripe;
 use Stripe\Charge;
 use App\Http\Controllers\Controller;
 use App\Models\ResponseStripe;
-
+use App\Helper\TelegramNotification;
 use Stripe\PaymentIntent;
 
 
@@ -38,6 +38,8 @@ class PaymentIntentController extends Controller
             return $paymentIntent->client_secret;
             
         } catch (\Exception $e) {
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

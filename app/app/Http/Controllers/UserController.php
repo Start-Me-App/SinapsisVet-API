@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\User;
 use App\Support\UploadServer;
 use Illuminate\Support\Facades\DB;
-
+use App\Helper\TelegramNotification;    
 use App\Support\TokenManager;
 
 class UserController extends Controller
@@ -25,9 +25,9 @@ class UserController extends Controller
      */
     public function update(Request $request)
     {
-
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user        = TokenManager::getUserFromToken($accessToken);
+        try{
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user        = TokenManager::getUserFromToken($accessToken);
 
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -99,6 +99,12 @@ class UserController extends Controller
         }
 
         return response()->json(['error' => 'Error al actualizar el usuario'], 500);
+
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
 
     }
 
@@ -205,9 +211,9 @@ class UserController extends Controller
 
     #create professor
     public function createProfessor(Request $request){
-
-        $accessToken = TokenManager::getTokenFromRequest();
-        $user        = TokenManager::getUserFromToken($accessToken);
+        try{
+            $accessToken = TokenManager::getTokenFromRequest();
+            $user        = TokenManager::getUserFromToken($accessToken);
 
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -283,5 +289,10 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Profesor creado correctamente', 'data' => $userCreated], 200); 
 
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 }
