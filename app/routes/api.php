@@ -17,6 +17,7 @@ use App\Http\Controllers\MercadoPago\WebHook;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentController};  
 use App\Http\Controllers\DiscountsController;
+use App\Http\Controllers\CouponsController;
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -93,6 +94,11 @@ use App\Http\Controllers\DiscountsController;
 
         Route::get('/discounts', [ShoppingCartController::class,'getDiscounts']);
         
+    });
+
+
+    Route::group(['prefix' => 'coupons'], function () {
+        Route::get('', [CouponsController::class,'validateCoupon']);
     });
 
 
@@ -195,6 +201,14 @@ use App\Http\Controllers\DiscountsController;
             Route::post('/', [DiscountsController::class,'create']);
             Route::patch('/', [DiscountsController::class,'update']);
             Route::delete('/{discount_id}', [DiscountsController::class,'delete']);
+        });
+
+        #create route group for coupons
+        Route::group(['prefix' => 'coupons'], function () {
+            Route::get('/', [CouponsController::class,'getAll']);
+            Route::post('/', [CouponsController::class,'create'])   ;
+            Route::patch('/{coupon_id}', [CouponsController::class,'update']);
+            Route::delete('/{coupon_id}', [CouponsController::class,'delete']);
         });
 
     });
