@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('installments', function (Blueprint $table) {
             $table->id();
             $table->integer('order_id');
-            $table->float('amount');
+            $table->integer('amount');
             $table->date('due_date');
             $table->string('status');
             $table->datetime('date_created');
