@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Order,OrderDetail,Inscriptions};
+use App\Models\{Order,OrderDetail,Inscriptions,Installments,InstallmentDetail};
 
 use Illuminate\Support\Facades\DB;
 
@@ -38,8 +38,11 @@ class OrdersController extends Controller
         return response()->json(['data' => $order], 200);
     }
 
-    public function acceptOrder($order_id)
+    public function acceptOrder(Request $request,$order_id)
     {
+        $installments = $request->input('installments');
+
+
         $order = Order::find($order_id);
 
         if($order->payment_method_id == 2 ){  
@@ -63,6 +66,31 @@ class OrdersController extends Controller
                         }
                     }
                 }
+
+                if($installments){
+                    $installment = new Installments();
+                    $installment->order_id = $order_id;
+                    $installment->due_date = date('Y-m-d', strtotime('+' . $installments . ' months'));
+                    $installment->status = 'pending';
+                    $installment->amount = $installments;
+                    $installment->date_created = date('Y-m-d H:i:s');
+                    $installment->date_last_updated = date('Y-m-d H:i:s');
+                    $installment->save();
+
+                    for($i = 1; $i <= $installments; $i++){
+                        $installmentDetail = new InstallmentDetail();
+                        $installmentDetail->installment_id = $installment->id;
+                        $installmentDetail->installment_number = $i;
+                        $installmentDetail->due_date = date('Y-m-d', strtotime('+' . $i . ' months'));
+                        $installmentDetail->save();
+                    }
+
+                    $order->installments = $installments;
+                    $order->save(); 
+                    
+                }
+
+
             }catch(\Exception $e){
                 return response()->json(['error' => $e->getMessage()], 500);
             }
@@ -115,7 +143,8 @@ class OrdersController extends Controller
 
         foreach($list as $item){          
             $total =  $item->orderDetails->sum('price');
-            $item->total = $total;
+            $item->setAttribute('total', $total);
+    
         }
 
 
@@ -139,4 +168,62 @@ class OrdersController extends Controller
     }
 
 
+    public function getInstallments($order_id)
+    {
+        $installments = Installments::with('installmentDetails','order.orderDetails.course')->where('order_id', $order_id)->get();
+        return response()->json(['data' => $installments], 200);
+    }
+
+
+    public function updateInstallmentDetail($installment_id,Request $request)
+    {
+        $installmentDetail = InstallmentDetail::find($installment_id);
+        $installmentDetail->paid = $request->input('paid');
+        $installmentDetail->url_payment = $request->input('url_payment');   
+        #$installmentDetail->due_date = $request->input('due_date');
+        if($request->input('paid')){
+            $installmentDetail->paid_date = date('Y-m-d H:i:s');
+        }
+        $installmentDetail->save();
+
+
+        $header_installment = Installments::find($installment_id);
+        $header_installment->date_last_updated = date('Y-m-d H:i:s');
+        $header_installment->save();
+
+
+
+        #check if all installment details are paid
+        $detail_aux = InstallmentDetail::where('installment_id', $installment_id)->get();
+        $all_paid = true;
+        foreach($detail_aux as $item){
+            if(!$item->paid){
+                $all_paid = false;
+            }
+        }
+        if($all_paid){
+            $installment = Installments::find($installment_id);
+            $installment->status = 'paid';
+            $installment->save();
+        }
+        return response()->json(['data' => $installmentDetail], 200);
+    }
+
+
+
+
+
+    public function getAllInstallments(Request $request)
+    {
+        $filters['status'] = $request->input('status');
+
+        if($filters['status']){
+            $installments = Installments::with('order.user')->where('status', $filters['status'])->get();
+        }else{
+            $installments = Installments::with('order.user')->get();
+        }
+
+        
+        return response()->json(['data' => $installments], 200);
+    }
 }

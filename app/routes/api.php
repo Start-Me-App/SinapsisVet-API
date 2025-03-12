@@ -110,6 +110,7 @@ use App\Http\Controllers\CouponsController;
 
 
 
+
     #create route group for admin
     Route::group(['prefix' => 'admin'], function () {
         
@@ -192,6 +193,9 @@ use App\Http\Controllers\CouponsController;
             Route::get('/{order_id}', [OrdersController::class,'getOrderDetails']);
             Route::post('/{order_id}/accept', [OrdersController::class,'acceptOrder']);
             Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder']);
+            Route::get('/{order_id}/installments', [OrdersController::class,'getInstallments']);
+            Route::patch('/{installment_id}/update', [OrdersController::class,'updateInstallmentDetail']);
+            Route::get('/installments/all', [OrdersController::class,'getAllInstallments']);
         }); 
 
 
@@ -210,5 +214,7 @@ use App\Http\Controllers\CouponsController;
             Route::patch('/{coupon_id}', [CouponsController::class,'update']);
             Route::delete('/{coupon_id}', [CouponsController::class,'delete']);
         });
+
+       
 
     });

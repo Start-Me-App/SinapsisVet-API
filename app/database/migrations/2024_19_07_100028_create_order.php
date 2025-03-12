@@ -31,6 +31,7 @@ return new class extends Migration
             $table->float('discount_amount_usd')->nullable();
             $table->float('discount_amount_ars')->nullable();
             $table->string('coupon_code')->nullable();
+            $table->integer('installments')->nullable();
         });
     }
 
