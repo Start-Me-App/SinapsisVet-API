@@ -201,6 +201,7 @@ class ShoppingCartController extends Controller
         $discount_percentage = 0;
         $discount_amount_usd = 0;
         $discount_amount_ars = 0;
+        $discount_percentage_coupon = 0;
         if($discount){
         $discount_percentage = $discount->discount;
         }
@@ -226,7 +227,7 @@ class ShoppingCartController extends Controller
             }    
 
             if($coupon->discount_percentage){
-            $discount_percentage += $coupon->discount_percentage;
+            $discount_percentage_coupon += $coupon->discount_percentage;
             }
 
             if($coupon->amount_value_usd){
@@ -310,6 +311,11 @@ class ShoppingCartController extends Controller
        #obtengo el total de la orden
        $total = OrderDetail::where('order_id', $order->id)->sum('price');
 
+       if($discount_percentage > 0){
+        $total = $total - ($total * $discount_percentage / 100);
+       }
+
+
        if($discount_amount_usd > 0){
 
         if($discount_amount_usd > $total){
@@ -328,9 +334,12 @@ class ShoppingCartController extends Controller
         $total = $total - $discount_amount_ars;
        }
 
-       if($discount_percentage > 0){
-        $total = $total - ($total * $discount_percentage / 100);
+       if($discount_percentage_coupon > 0){
+        $total = $total - ($total * $discount_percentage_coupon / 100);
        }
+
+       
+
 
        if($total < 0){
         throw new \Exception('El total de la orden es menor a 0');
@@ -370,6 +379,7 @@ class ShoppingCartController extends Controller
         $order->discount_percentage = $discount_percentage;
         $order->discount_amount_usd = $discount_amount_usd;
         $order->discount_amount_ars = $discount_amount_ars;
+        $order->discount_percentage_coupon = $discount_percentage_coupon;
         $order->save();
 
         if($coupon_code){

@@ -28,6 +28,7 @@ return new class extends Migration
             $table->float('total_amount_usd')->nullable();
             $table->float('total_amount_ars')->nullable();
             $table->float('discount_percentage')->nullable();
+            $table->float('discount_percentage_coupon')->nullable();
             $table->float('discount_amount_usd')->nullable();
             $table->float('discount_amount_ars')->nullable();
             $table->string('coupon_code')->nullable();
