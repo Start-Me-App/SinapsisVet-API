@@ -374,8 +374,13 @@ class ShoppingCartController extends Controller
         $shoppingCart->save();
 
         $order->coupon_code = $coupon_code;
-        $order->total_amount_usd = $total;
-        $order->total_amount_ars = $total;
+        if($paymentMethodId == 1 || $paymentMethodId == 2){
+            $order->total_amount_usd = null;
+            $order->total_amount_ars = $total;
+        }else{
+            $order->total_amount_usd = $total;
+            $order->total_amount_ars = null;
+        }
         $order->discount_percentage = $discount_percentage;
         $order->discount_amount_usd = $discount_amount_usd;
         $order->discount_amount_ars = $discount_amount_ars;
