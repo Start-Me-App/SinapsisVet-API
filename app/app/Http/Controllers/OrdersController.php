@@ -194,11 +194,10 @@ class OrdersController extends Controller
         $header_installment->save();
 
 
-
-        #check if all installment details are paid
-        $detail_aux = InstallmentDetail::where('installment_id', $installment_id)->get();
+        $installment_aux = Installments::with('installmentDetails')->find($installmentDetail->installment_id);
+      
         $all_paid = true;
-        foreach($detail_aux as $item){
+        foreach($installment_aux->installmentDetails as $item){
             if(!$item->paid){
                 $all_paid = false;
             }
