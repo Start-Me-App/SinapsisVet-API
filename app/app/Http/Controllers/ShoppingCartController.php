@@ -316,7 +316,7 @@ class ShoppingCartController extends Controller
        }
 
 
-       if($discount_amount_usd > 0){
+       if($discount_amount_usd > 0 && $paymentMethodId == 3){
 
         if($discount_amount_usd > $total){
             throw new \Exception('El descuento es mayor al total de la orden');
@@ -325,7 +325,7 @@ class ShoppingCartController extends Controller
         $total = $total - $discount_amount_usd;
        }
 
-       if($discount_amount_ars > 0){
+       if($discount_amount_ars > 0 && ( $paymentMethodId == 1 || $paymentMethodId == 2 )){
 
         if($discount_amount_ars > $total){
             throw new \Exception('El descuento es mayor al total de la orden');

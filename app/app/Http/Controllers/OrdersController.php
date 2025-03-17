@@ -218,12 +218,21 @@ class OrdersController extends Controller
         $filters['status'] = $request->input('status');
 
         if($filters['status']){
-            $installments = Installments::with('order.user')->where('status', $filters['status'])->get();
+            $installments = Installments::with('order.user','installmentDetails')->where('status', $filters['status'])->get();
         }else{
-            $installments = Installments::with('order.user')->get();
+            $installments = Installments::with('order.user','installmentDetails')->get();
         }
 
-        
+        foreach($installments as $item){
+            $item->setAttribute('next_due_date', null);
+            foreach($item->installmentDetails as $detail){
+                if(!$detail->paid){
+                   $next_due_date = $detail->due_date;
+                   $item->setAttribute('next_due_date', $next_due_date);
+                   break;
+                }
+            }
+        }
         return response()->json(['data' => $installments], 200);
     }
 }
