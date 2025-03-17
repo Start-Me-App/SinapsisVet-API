@@ -204,7 +204,7 @@ class OrdersController extends Controller
             }
         }
         if($all_paid){
-            $installment = Installments::find($installment_id);
+            $installment = Installments::find($installmentDetail->installment_id);
             $installment->status = 'paid';
             $installment->save();
         }
