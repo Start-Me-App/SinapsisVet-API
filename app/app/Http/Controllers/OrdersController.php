@@ -183,11 +183,13 @@ class OrdersController extends Controller
         #$installmentDetail->due_date = $request->input('due_date');
         if($request->input('paid')){
             $installmentDetail->paid_date = date('Y-m-d H:i:s');
+        }else{
+            $installmentDetail->paid_date = null;
         }
         $installmentDetail->save();
 
 
-        $header_installment = Installments::find($installment_id);
+        $header_installment = Installments::find($installmentDetail->installment_id);
         $header_installment->date_last_updated = date('Y-m-d H:i:s');
         $header_installment->save();
 
