@@ -229,7 +229,9 @@ class OrdersController extends Controller
             foreach($item->installmentDetails as $detail){
                 if(!$detail->paid){
                    $next_due_date = $detail->due_date;
+                   $next_due_url_payment = $detail->url_payment;
                    $item->setAttribute('next_due_date', $next_due_date);
+                   $item->setAttribute('next_due_url_payment', $next_due_url_payment);
                    break;
                 }
             }
