@@ -25,6 +25,14 @@ return new class extends Migration
             $table->string('invoice_email')->nullable();
             $table->string('invoice_address')->nullable();
             $table->string('invoice_document')->nullable();
+            $table->float('total_amount_usd')->nullable();
+            $table->float('total_amount_ars')->nullable();
+            $table->float('discount_percentage')->nullable();
+            $table->float('discount_percentage_coupon')->nullable();
+            $table->float('discount_amount_usd')->nullable();
+            $table->float('discount_amount_ars')->nullable();
+            $table->string('coupon_code')->nullable();
+            $table->integer('installments')->nullable();
         });
     }
 

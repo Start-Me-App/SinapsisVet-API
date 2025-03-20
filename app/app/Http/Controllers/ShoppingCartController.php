@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail,Courses,Discounts};
+use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail,Courses,Discounts,Coupons};
 
 use Illuminate\Support\Facades\DB;
 
@@ -171,8 +171,8 @@ class ShoppingCartController extends Controller
     {
         try{
 
-            $accessToken = TokenManager::getTokenFromRequest();
-            $user = TokenManager::getUserFromToken($accessToken);
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
 
         $shoppingCart = ShoppingCart::with(['items.course'])->where('user_id', $user->id)->where('active', 1)->first();
 
@@ -194,6 +194,57 @@ class ShoppingCartController extends Controller
             }
        }
 
+
+        #obtengo el descuento
+        $discount = self::getDiscountsForUser();
+
+        $discount_percentage = 0;
+        $discount_amount_usd = 0;
+        $discount_amount_ars = 0;
+        $discount_percentage_coupon = 0;
+        if($discount){
+        $discount_percentage = $discount->discount;
+        }
+
+       
+
+       $request_coupon = $request->input('coupon_code');        
+
+       if($request_coupon){
+            #check if coupon is valid
+            $coupon = Coupons::where('code', $request_coupon)->first();
+
+            if(!$coupon){
+                return response()->json(['message' => 'Cupón no válido'], 400);
+            }
+
+            if($coupon->expiration_date < now()){
+                return response()->json(['message' => 'Cupón expirado'], 400);
+            }    
+
+            if($coupon->max_uses <= $coupon->used_times){
+                return response()->json(['message' => 'Cupón agotado'], 400);
+            }    
+
+            if($coupon->discount_percentage){
+            $discount_percentage_coupon += $coupon->discount_percentage;
+            }
+
+            if($coupon->amount_value_usd){
+                $discount_amount_usd = $coupon->amount_value_usd;
+            }
+
+            if($coupon->amount_value_ars){
+                $discount_amount_ars = $coupon->amount_value_ars;
+            }
+
+            $coupon_code = $coupon->code;
+       }else{
+            $coupon_code = null;
+       }
+       
+       
+      
        $order = new Order();
        $order->user_id = $user->id;
        $order->shopping_cart_id = $shoppingCart->id;
@@ -204,14 +255,6 @@ class ShoppingCartController extends Controller
        $order->date_closed = null;
        $order->date_paid = null;
        $order->save();
-
-        #obtengo el descuento
-        $discount = self::getDiscountsForUser();
-
-        $discount_percentage = 0;
-        if($discount){
-        $discount_percentage = $discount->discount;
-        }
 
        foreach($shoppingCart->items as $item){
            #check if user is already inscribed
@@ -224,9 +267,9 @@ class ShoppingCartController extends Controller
                    $orderDetail->order_id = $order->id;
                    $orderDetail->course_id = $item->course_id;
                    if($paymentMethodId == 1 || $paymentMethodId == 2){
-                    $orderDetail->price = env('WORKSHOP_PRICE_ARS') - (env('WORKSHOP_PRICE_ARS') * $discount_percentage / 100);
+                    $orderDetail->price = env('WORKSHOP_PRICE_ARS');
                    }else{
-                    $orderDetail->price = env('WORKSHOP_PRICE_USD') - (env('WORKSHOP_PRICE_USD') * $discount_percentage / 100);
+                    $orderDetail->price = env('WORKSHOP_PRICE_USD');
                    }
                    $orderDetail->with_workshop = $item->with_workshop;
                    $orderDetail->quantity = 1;
@@ -254,8 +297,11 @@ class ShoppingCartController extends Controller
                     $price = $item->course->price_usd;
                 }
                }
-               $final_price = $price - ($price * $discount_percentage / 100);
-               $orderDetail->price = $final_price;
+
+              /*  $final_price = $price - ($price * $discount_percentage / 100); */
+              
+
+               $orderDetail->price = $price;
                $orderDetail->quantity = 1;
                $orderDetail->save();
 
@@ -265,7 +311,39 @@ class ShoppingCartController extends Controller
        #obtengo el total de la orden
        $total = OrderDetail::where('order_id', $order->id)->sum('price');
 
-      
+       if($discount_percentage > 0){
+        $total = $total - ($total * $discount_percentage / 100);
+       }
+
+
+       if($discount_amount_usd > 0 && $paymentMethodId == 3){
+
+        if($discount_amount_usd > $total){
+            throw new \Exception('El descuento es mayor al total de la orden');
+        }
+
+        $total = $total - $discount_amount_usd;
+       }
+
+       if($discount_amount_ars > 0 && ( $paymentMethodId == 1 || $paymentMethodId == 2 )){
+
+        if($discount_amount_ars > $total){
+            throw new \Exception('El descuento es mayor al total de la orden');
+        }
+
+        $total = $total - $discount_amount_ars;
+       }
+
+       if($discount_percentage_coupon > 0){
+        $total = $total - ($total * $discount_percentage_coupon / 100);
+       }
+
+       
+
+
+       if($total < 0){
+        throw new \Exception('El total de la orden es menor a 0');
+       }    
      
        switch($paymentMethodId){
         case 1: #Mercado Pago
@@ -292,8 +370,27 @@ class ShoppingCartController extends Controller
        }
      
 
-       $shoppingCart->active = 0;
-       $shoppingCart->save();
+        $shoppingCart->active = 0;
+        $shoppingCart->save();
+
+        $order->coupon_code = $coupon_code;
+        if($paymentMethodId == 1 || $paymentMethodId == 2){
+            $order->total_amount_usd = null;
+            $order->total_amount_ars = $total;
+        }else{
+            $order->total_amount_usd = $total;
+            $order->total_amount_ars = null;
+        }
+        $order->discount_percentage = $discount_percentage;
+        $order->discount_amount_usd = $discount_amount_usd;
+        $order->discount_amount_ars = $discount_amount_ars;
+        $order->discount_percentage_coupon = $discount_percentage_coupon;
+        $order->save();
+
+        if($coupon_code){
+            $coupon->used_times++;
+            $coupon->save();
+        }
 
         $newShoppingCart = new ShoppingCart();
         $newShoppingCart->user_id = $user->id;

@@ -17,6 +17,7 @@ use App\Http\Controllers\MercadoPago\WebHook;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentController};  
 use App\Http\Controllers\DiscountsController;
+use App\Http\Controllers\CouponsController;
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -96,10 +97,16 @@ use App\Http\Controllers\DiscountsController;
     });
 
 
+    Route::group(['prefix' => 'coupons'], function () {
+        Route::get('', [CouponsController::class,'validateCoupon']);
+    });
+
+
     #create route group for orders
     Route::group(['prefix' => 'orders'], function () {
         Route::get('', [OrdersController::class,'getMyOrders']);
     });
+
 
 
 
@@ -186,6 +193,9 @@ use App\Http\Controllers\DiscountsController;
             Route::get('/{order_id}', [OrdersController::class,'getOrderDetails']);
             Route::post('/{order_id}/accept', [OrdersController::class,'acceptOrder']);
             Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder']);
+            Route::get('/{order_id}/installments', [OrdersController::class,'getInstallments']);
+            Route::patch('/{installment_id}/update', [OrdersController::class,'updateInstallmentDetail']);
+            Route::get('/installments/all', [OrdersController::class,'getAllInstallments']);
         }); 
 
 
@@ -196,5 +206,15 @@ use App\Http\Controllers\DiscountsController;
             Route::patch('/', [DiscountsController::class,'update']);
             Route::delete('/{discount_id}', [DiscountsController::class,'delete']);
         });
+
+        #create route group for coupons
+        Route::group(['prefix' => 'coupons'], function () {
+            Route::get('/', [CouponsController::class,'getAll']);
+            Route::post('/', [CouponsController::class,'create'])   ;
+            Route::patch('/{coupon_id}', [CouponsController::class,'update']);
+            Route::delete('/{coupon_id}', [CouponsController::class,'delete']);
+        });
+
+       
 
     });
