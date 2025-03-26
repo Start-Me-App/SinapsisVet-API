@@ -440,11 +440,15 @@ class ShoppingCartController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
         $user = TokenManager::getUserFromToken($accessToken);
 
-        #count inscriptions of user
-        $inscriptions = Inscriptions::where('user_id', $user->id)->count();
-
-        #count courses of user
-        $discounts = Discounts::where('courses_amount', '<=', $inscriptions)->orderBy('courses_amount', 'desc')->first();
+        if($user){
+            #count inscriptions of user
+            $inscriptions = Inscriptions::where('user_id', $user->id)->count();
+    
+            #count courses of user
+            $discounts = Discounts::where('courses_amount', '<=', $inscriptions)->orderBy('courses_amount', 'desc')->first();
+        }else{
+            return response()->json(['data' => []], 200);
+        }
 
         if(!$discounts){
             return response()->json(['data' => []], 200);
