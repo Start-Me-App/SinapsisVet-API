@@ -63,8 +63,8 @@ class WorkshopsController extends Controller
         $workshop->active = $data['active'];
         $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
     
-        $workshop->zoom_meeting_id = $zoom_meeting_id;
-        $workshop->zoom_passcode = $zoom_passcode;
+        $workshop->zoom_meeting_id = (int)$zoom_meeting_id;
+        $workshop->zoom_passcode = (int)$zoom_passcode;
         $workshop->date = $date;
         $workshop->time = $time;
 
@@ -145,8 +145,8 @@ class WorkshopsController extends Controller
         $workshop->description = $data['description'];    
         $workshop->active = $data['active'];
         $workshop->video_url = isset($data['video_url']) ? $data['video_url'] : null;
-        $workshop->zoom_meeting_id = $zoom_meeting_id;
-        $workshop->zoom_passcode = $zoom_passcode;
+        $workshop->zoom_meeting_id = (int)$zoom_meeting_id;
+        $workshop->zoom_passcode = (int)$zoom_passcode;
   
         if(isset($data['professor_id'])){
             $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
