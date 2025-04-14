@@ -276,7 +276,7 @@ class OrdenDeCompraEmail
     }
 
 
-    private function getPaymentMethod($paymentMethodId){
+    private static function getPaymentMethod($paymentMethodId){
        switch($paymentMethodId){
         case 1:
             return 'Mercado Pago';
