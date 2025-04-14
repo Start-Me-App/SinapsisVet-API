@@ -69,7 +69,7 @@ class OrdenDeCompraEmail
         try {
             $mail->isHTML(true);
             $mail->Subject = 'Nueva orden de compra';
-
+            $paymentMethod = self::getPaymentMethod($order->payment_method_id);
             // Construir el cuerpo del email
             $emailBody = '
                 <!DOCTYPE html>
@@ -200,6 +200,10 @@ class OrdenDeCompraEmail
                                     <div class="info-label">Estado</div>
                                     <div class="info-value">' . $order->status . '</div>
                                 </div>
+                                <div class="info-item">
+                                    <div class="info-label">Método de pago</div>
+                                    <div class="info-value">' . $paymentMethod . '</div>
+                                </div>
                             </div>
 
                             <div class="section">
@@ -269,5 +273,17 @@ class OrdenDeCompraEmail
         if (!$mail->send()) {
             throw new \Exception("Error al enviar el correo electrónico: {$mail->ErrorInfo}", 500);
         }
+    }
+
+
+    private function getPaymentMethod($paymentMethodId){
+       switch($paymentMethodId){
+        case 1:
+            return 'Mercado Pago';
+        case 2:
+            return 'Transferencia';
+        case 3:
+            return 'Stripe';
+       }
     }
 }
