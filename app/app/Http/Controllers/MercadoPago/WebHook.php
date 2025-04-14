@@ -20,7 +20,7 @@ use MercadoPago\Client\Common\RequestOptions;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Inscriptions;
-
+use App\Support\Email\OrdenDeCompraEmail;
 
 final class WebHook extends MercadoPago
 {
@@ -109,6 +109,11 @@ final class WebHook extends MercadoPago
             $order->save();
 
             $orderDetail = OrderDetail::where('order_id', $order->id)->get();
+
+
+            $order_email = Order::with(['orderDetails.course'])->find($order->id);
+            OrdenDeCompraEmail::sendOrderEmail($order_email);
+
             foreach($orderDetail as $item){
 
                 #check if the inscription already exists

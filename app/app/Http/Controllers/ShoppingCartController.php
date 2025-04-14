@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
 use App\Models\{ShoppingCart, User,ShoppingCartContent,Inscriptions,Workshops,Order,OrderDetail,Courses,Discounts,Coupons};
-
+use App\Support\Email\OrdenDeCompraEmail;
 use Illuminate\Support\Facades\DB;
 
 use App\Support\TokenManager;
@@ -392,6 +392,11 @@ class ShoppingCartController extends Controller
             $coupon->save();
         }
 
+
+        if($paymentMethodId == 2){
+            $order = Order::with(['orderDetails.course'])->find($order->id);
+            OrdenDeCompraEmail::sendOrderEmail($order);
+        }
         $newShoppingCart = new ShoppingCart();
         $newShoppingCart->user_id = $user->id;
         $newShoppingCart->active = 1;

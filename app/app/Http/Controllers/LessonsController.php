@@ -57,8 +57,8 @@ class LessonsController extends Controller
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
-        $lesson->zoom_meeting_id = $zoom_meeting_id;
-        $lesson->zoom_passcode = $zoom_passcode;
+        $lesson->zoom_meeting_id = (int)$zoom_meeting_id;
+        $lesson->zoom_passcode = (int)$zoom_passcode;
 
         if(isset($data['date'])){
             $lesson->date = Carbon::parse($data['date'])->format('Y-m-d');
@@ -153,8 +153,8 @@ class LessonsController extends Controller
         $lesson->description = $data['description'];    
         $lesson->active = $data['active'];
         $lesson->video_url = isset($data['video_url']) ? $data['video_url'] : null;
-        $lesson->zoom_meeting_id = $zoom_meeting_id;
-        $lesson->zoom_passcode = $zoom_passcode;
+        $lesson->zoom_meeting_id = (int)$zoom_meeting_id;
+        $lesson->zoom_passcode = (int)$zoom_passcode;
         $profesor = User::where('id',$data['professor_id'])->where('role_id',2)->first();
         if(!$profesor){
             return response()->json(['error' => 'Profesor no encontrado'], 409);

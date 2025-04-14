@@ -117,104 +117,96 @@ use App\Http\Controllers\CouponsController;
         #create route group for courses
         Route::group(['prefix' => 'courses'], function () {
             Route::post('/', [CoursesController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
-            Route::post('/{course_id}', [CoursesController::class,'update']);
-            Route::delete('/{course_id}', [CoursesController::class,'delete']);
-            Route::get('/list', [CoursesController::class,'listAllCourses']);
+            Route::post('/{course_id}', [CoursesController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{course_id}', [CoursesController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/list', [CoursesController::class,'listAllCourses'])->middleware(ControlAccessMiddleware::class.':admin');
 
-            Route::get('/{course_id}', [CoursesController::class,'getCourse']);
-            Route::get('/{course_id}/lessons', [CoursesController::class,'getLessonsByCourse']);
-            Route::get('/{course_id}/exams', [CoursesController::class,'getExamsByCourse']);
-            Route::get('/{course_id}/workshops', [CoursesController::class,'getWorkshopsByCourse']);
+            Route::get('/{course_id}', [CoursesController::class,'getCourse'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{course_id}/lessons', [CoursesController::class,'getLessonsByCourse'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{course_id}/exams', [CoursesController::class,'getExamsByCourse'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{course_id}/workshops', [CoursesController::class,'getWorkshopsByCourse'])->middleware(ControlAccessMiddleware::class.':admin');
         
-            Route::get('/{course_id}/students', [CoursesController::class,'getStudents']);
-            Route::post('/{course_id}/students', [CoursesController::class,'addStudent']);
-            Route::delete('/{course_id}/students/{student_id}', [CoursesController::class,'removeStudent']);
+            Route::get('/{course_id}/students', [CoursesController::class,'getStudents'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{course_id}/students', [CoursesController::class,'addStudent'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{course_id}/students/{student_id}', [CoursesController::class,'removeStudent'])->middleware(ControlAccessMiddleware::class.':admin');
         });
-
 
 
         #create route group for lessons
         Route::group(['prefix' => 'lessons'], function () {
-            Route::post('/', [LessonsController::class,'create']);
-            Route::post('/{lesson_id}', [LessonsController::class,'update']);
-            Route::delete('/{lesson_id}', [LessonsController::class,'delete']);
+            Route::post('/', [LessonsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{lesson_id}', [LessonsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{lesson_id}', [LessonsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 
-            Route::get('/{lesson_id}', [LessonsController::class,'getLesson']);
+            Route::get('/{lesson_id}', [LessonsController::class,'getLesson'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
         #create route group for workshops
         Route::group(['prefix' => 'workshops'], function () {
-            Route::post('/', [WorkshopsController::class,'create']);
-            Route::post('/{workshop_id}', [WorkshopsController::class,'update']);
-            Route::delete('/{workshop_id}', [WorkshopsController::class,'delete']);
+            Route::post('/', [WorkshopsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{workshop_id}', [WorkshopsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{workshop_id}', [WorkshopsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 
-            Route::get('/{workshop_id}', [WorkshopsController::class,'getWorkshop']);
+            Route::get('/{workshop_id}', [WorkshopsController::class,'getWorkshop'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
         #create route group for exams
         Route::group(['prefix' => 'exams'], function () {
-            Route::post('/', [ExamsController::class,'create']);
-            Route::patch('/{exam_id}', [ExamsController::class,'update']);
-            Route::delete('/{exam_id}', [ExamsController::class,'delete']);
+            Route::post('/', [ExamsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/{exam_id}', [ExamsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{exam_id}', [ExamsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 
 
-            Route::post('/{exam_id}/questions', [ExamsController::class,'addQuestion']);
-            Route::get('/{exam_id}/questions', [ExamsController::class,'getQuestions']);
+            Route::post('/{exam_id}/questions', [ExamsController::class,'addQuestion'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{exam_id}/questions', [ExamsController::class,'getQuestions'])->middleware(ControlAccessMiddleware::class.':admin');
 
-            Route::get('/{exam_id}', [ExamsController::class,'getExam']);
+            Route::get('/{exam_id}', [ExamsController::class,'getExam'])->middleware(ControlAccessMiddleware::class.':admin');
         
-            Route::patch('/{exam_id}/questions/{question_id}', [ExamsController::class,'updateQuestion']);      
-            Route::delete('/{exam_id}/questions/{question_id}', [ExamsController::class,'deleteQuestion']);
+            Route::patch('/{exam_id}/questions/{question_id}', [ExamsController::class,'updateQuestion'])->middleware(ControlAccessMiddleware::class.':admin');      
+            Route::delete('/{exam_id}/questions/{question_id}', [ExamsController::class,'deleteQuestion'])->middleware(ControlAccessMiddleware::class.':admin');
 
-            Route::get('/{exam_id}/results', [ExamsController::class,'getResults']);
+            Route::get('/{exam_id}/results', [ExamsController::class,'getResults'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
-    /*     #create route group for materials
-        Route::group(['prefix' => 'materials'], function () {
-            Route::post('/', [MaterialsController::class,'create']);
-            Route::patch('/{material_id}', [MaterialsController::class,'update']);
-            Route::delete('/{material_id}', [MaterialsController::class,'delete']);
-
-            Route::get('/{material_id}', [MaterialsController::class,'getMaterial']);
-        }); */
+   
 
         #create route group for categories
         Route::group(['prefix' => 'categories'], function () {
-            Route::post('/', [CategoriesController::class,'create']);
-            Route::patch('/{category_id}', [CategoriesController::class,'update']);
-            Route::delete('/{category_id}', [CategoriesController::class,'delete']);
+            Route::post('/', [CategoriesController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin')   ;
+            Route::patch('/{category_id}', [CategoriesController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{category_id}', [CategoriesController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 
         });
 
 
         #create route group for orders
         Route::group(['prefix' => 'orders'], function () {
-            Route::get('/all', [OrdersController::class,'getAll']);
-            Route::get('/{order_id}', [OrdersController::class,'getOrderDetails']);
-            Route::post('/{order_id}/accept', [OrdersController::class,'acceptOrder']);
-            Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder']);
-            Route::get('/{order_id}/installments', [OrdersController::class,'getInstallments']);
-            Route::patch('/{installment_id}/update', [OrdersController::class,'updateInstallmentDetail']);
-            Route::get('/installments/all', [OrdersController::class,'getAllInstallments']);
+            Route::get('/all', [OrdersController::class,'getAll'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{order_id}', [OrdersController::class,'getOrderDetails'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{order_id}/accept', [OrdersController::class,'acceptOrder'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{order_id}/installments', [OrdersController::class,'getInstallments'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/{installment_id}/update', [OrdersController::class,'updateInstallmentDetail'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/installments/all', [OrdersController::class,'getAllInstallments'])->middleware(ControlAccessMiddleware::class.':admin');
         }); 
 
 
         #create route group for discounts
         Route::group(['prefix' => 'discounts'], function () {
-            Route::get('/', [DiscountsController::class,'getAll']);
-            Route::post('/', [DiscountsController::class,'create']);
-            Route::patch('/', [DiscountsController::class,'update']);
-            Route::delete('/{discount_id}', [DiscountsController::class,'delete']);
+            Route::get('/', [DiscountsController::class,'getAll'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/', [DiscountsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/', [DiscountsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{discount_id}', [DiscountsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
         #create route group for coupons
         Route::group(['prefix' => 'coupons'], function () {
-            Route::get('/', [CouponsController::class,'getAll']);
-            Route::post('/', [CouponsController::class,'create'])   ;
-            Route::patch('/{coupon_id}', [CouponsController::class,'update']);
-            Route::delete('/{coupon_id}', [CouponsController::class,'delete']);
+            Route::get('/', [CouponsController::class,'getAll'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/', [CouponsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/{coupon_id}', [CouponsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{coupon_id}', [CouponsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
        
 
-    });
+    })->middleware(ControlAccessMiddleware::class.':admin');

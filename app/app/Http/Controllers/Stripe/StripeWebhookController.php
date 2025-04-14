@@ -12,6 +12,7 @@ use App\Models\OrderDetail;
 use App\Models\Inscriptions;
 use App\Models\ResponseStripe;
 use App\Http\Controllers\Controller;
+use App\Support\Email\OrdenDeCompraEmail;
 
 class StripeWebhookController extends Controller
 {
@@ -50,6 +51,12 @@ class StripeWebhookController extends Controller
                 $order->save();
     
                 $orderDetail = OrderDetail::where('order_id', $order->id)->get();
+
+
+                $order_email = Order::with(['orderDetails.course'])->find($order->id);
+                OrdenDeCompraEmail::sendOrderEmail($order_email);
+
+                
                 foreach($orderDetail as $item){
     
                     #check if the inscription already exists
