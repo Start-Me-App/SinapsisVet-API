@@ -455,6 +455,7 @@ class CoursesController extends Controller
         $studentsList = [];
         foreach($students as $student){
             $studentData = User::where('id',$student->user_id)->first();
+            $studentData->with_workshop = $student->with_workshop;
             $studentsList[] = $studentData;
         }
 
