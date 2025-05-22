@@ -15,6 +15,7 @@ use App\Support\TokenManager;
 
 use App\Http\Controllers\MercadoPago\CheckoutPro;
 use App\Http\Controllers\Stripe\PaymentIntentController;
+use App\Http\Controllers\Stripe\SubscriptionController;
 use App\Helper\TelegramNotification;
 
 class ShoppingCartController extends Controller
@@ -365,6 +366,12 @@ class ShoppingCartController extends Controller
         case 3: #Stripe
             $paymentIntent = new PaymentIntentController();
             $client_secret = $paymentIntent->createPaymentIntent(floatval($total),$user->id,$order->id);
+            $preference = null;
+            break;
+        case 4: #suscripción Stripe
+            $subscription = new SubscriptionController();
+            $client_secret = null;
+            $subscription_id = $subscription->createSubscription(floatval($total), $user->id, $order->id);
             $preference = null;
             break;
        }
