@@ -103,4 +103,9 @@ class Movements extends Model
     {
         return $this->belongsTo(\App\Models\Courses::class, 'course_id');
     }
+
+    public function account()
+    {
+        return $this->belongsTo(\App\Models\Cuentas::class, 'account_id');
+    }
 } 

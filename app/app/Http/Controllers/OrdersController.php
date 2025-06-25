@@ -179,8 +179,16 @@ class OrdersController extends Controller
 
     public function updateInstallmentDetail($installment_id,Request $request)
     {
+
+        $account_id = $request->input('account_id');
+        if(!$account_id){
+            return response()->json(['error' => 'Se necesita una cuenta para registrar el pago'], 500);
+        }
+
+        $commission_percentage = $request->input('commission_percentage');
+
         $installmentDetail = InstallmentDetail::find($installment_id);
-        $installmentDetail->paid = $request->input('paid');
+        
         $installmentDetail->url_payment = $request->input('url_payment');   
         #$installmentDetail->due_date = $request->input('due_date');
         if($request->input('paid')){
@@ -195,17 +203,22 @@ class OrdersController extends Controller
             $orderDetails = OrderDetail::where('order_id', $order->id)->get();
             foreach($orderDetails as $item){
                 $course = Courses::find($item->course_id);
+                if($installmentDetail->paid == 0){
                 $movement = new Movements();
                 $movement->amount = $item->price / $installment->amount;
+                $movement->amount_neto = ($item->price / $installment->amount) - ($item->price / $installment->amount) * $commission_percentage / 100;
                 $movement->currency = 2;
                 $movement->description = 'Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
                 $movement->course_id = $item->course_id;
                 $movement->period = date('m-Y');
+                $movement->account_id = $request->input('account_id');
                 $movement->save();
+                }
             }
         }else{
             $installmentDetail->paid_date = null;
         }
+        $installmentDetail->paid = $request->input('paid');
         $installmentDetail->save();
 
 
@@ -268,6 +281,11 @@ class OrdersController extends Controller
 
         $request_data = $request->all();
 
+        if(!isset($request_data['account_id']) && $request_data['installments'] == 0){
+            return response()->json(['error' => 'Se necesita una cuenta para registrar el pago'], 500);
+        }
+
+        $commission_percentage = isset($request_data['commission_percentage']) ? $request_data['commission_percentage'] : 0;
         
         $discount_percentage = isset($request_data['discount_percentage']) ? $request_data['discount_percentage'] : 0;
         $currency = null;
@@ -366,9 +384,12 @@ class OrdersController extends Controller
 
 
         if($request_data['installments'] == 0){
+            $account_id = $request->input('account_id');
+           
             foreach($request_data['items'] as $item){
                 $movement = new Movements();
-                $movement->amount = $item['unit_price'];
+                $movement->amount = $item['unit_price'];    
+                $movement->amount_neto = $item['unit_price'] - ($item['unit_price'] * $commission_percentage / 100);
                 $movement->currency = $currency;
                 #find course name
                 $course = Courses::find($item['course_id']);
@@ -376,6 +397,7 @@ class OrdersController extends Controller
                 $movement->course_id = $item['course_id'];
                 $movement->period = date('m-Y');
                 $movement->created_at = date('Y-m-d H:i:s');
+                $movement->account_id = $account_id;
                 $movement->save();
             }
         }

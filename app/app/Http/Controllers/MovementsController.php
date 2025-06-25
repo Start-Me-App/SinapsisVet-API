@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Movements;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Cuentas;
 
 class MovementsController extends Controller
 {
@@ -31,6 +32,10 @@ class MovementsController extends Controller
 
             if ($request->has('course_id')) {
                 $query->byCourse($request->course_id);
+            }
+
+            if ($request->has('account_id')) {
+                $query->byAccount($request->account_id);
             }
 
             $movements = $query->orderBy('created_at', 'desc')->get();
@@ -81,7 +86,8 @@ class MovementsController extends Controller
                 'currency' => 'required|integer|in:1,2',
                 'period' => 'required|string',
                 'description' => 'nullable|string|max:500',
-                'course_id' => 'nullable|integer|exists:courses,id'
+                'course_id' => 'nullable|integer|exists:courses,id',
+                'account_id' => 'nullable|integer|exists:accounts,id'
             ]);
 
             if ($validator->fails()) {
@@ -97,6 +103,7 @@ class MovementsController extends Controller
             $movement->period = $request->period;
             $movement->description = $request->description;
             $movement->course_id = $request->course_id;
+            $movement->account_id = $request->account_id;
             $movement->save();
 
             return response()->json([
@@ -130,7 +137,8 @@ class MovementsController extends Controller
                 'currency' => 'required|integer|in:1,2',
                 'period' => 'required|string',
                 'description' => 'nullable|string|max:500',
-                'course_id' => 'nullable|integer|exists:courses,id'
+                'course_id' => 'nullable|integer|exists:courses,id',
+                'account_id' => 'nullable|integer|exists:accounts,id'
             ]);
 
             if ($validator->fails()) {
@@ -145,6 +153,7 @@ class MovementsController extends Controller
             $movement->period = $request->period;
             $movement->description = $request->description;
             $movement->course_id = $request->course_id;
+            $movement->account_id = $request->account_id;
             $movement->save();
 
             return response()->json([
@@ -251,8 +260,8 @@ class MovementsController extends Controller
             $totalMovements = Movements::count();
             
             // Total por moneda separado
-            $totalAmountByCurrency = Movements::selectRaw('currency, SUM(amount) as total_amount')
-                ->groupBy('currency')
+            $totalAmountByCurrency = Movements::selectRaw('currency, account_id, SUM(amount) as total_amount')
+                ->groupBy(['currency', 'account_id'])
                 ->get()
                 ->mapWithKeys(function ($item) {
                     $currencyName = Movements::CURRENCIES[$item->currency] ?? 'Unknown';
@@ -260,8 +269,8 @@ class MovementsController extends Controller
                 });
 
             // Estadísticas por año separadas por moneda
-            $yearStats = Movements::selectRaw('RIGHT(period, 4) as year, currency, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy(['year', 'currency'])
+            $yearStats = Movements::selectRaw('RIGHT(period, 4) as year, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
+                ->groupBy(['year', 'currency', 'account_id'])
                 ->orderBy('year', 'desc')
                 ->get()
                 ->map(function ($item) {
@@ -270,15 +279,18 @@ class MovementsController extends Controller
                         'currency_id' => $item->currency,
                         'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
                         'count' => $item->count,
-                        'total_amount' => $item->total_amount
+                        'total_amount' => $item->total_amount,
+                        'total_amount_neto' => $item->total_amount_neto,
+                        'account_id' => $item->account_id,
+                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
                     ];
                 });
 
             // Estadísticas por mes del año actual separadas por moneda
             $currentYear = date('Y');
-            $monthStats = Movements::selectRaw('LEFT(period, 2) as month, currency, COUNT(*) as count, SUM(amount) as total_amount')
+            $monthStats = Movements::selectRaw('LEFT(period, 2) as month, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
                 ->where('period', 'like', '%/' . $currentYear)
-                ->groupBy(['month', 'currency'])
+                ->groupBy(['month', 'currency', 'account_id'])
                 ->orderBy('month')
                 ->get()
                 ->map(function ($item) {
@@ -287,26 +299,32 @@ class MovementsController extends Controller
                         'currency_id' => $item->currency,
                         'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
                         'count' => $item->count,
-                        'total_amount' => $item->total_amount
+                        'total_amount' => $item->total_amount,
+                        'total_amount_neto' => $item->total_amount_neto,
+                        'account_id' => $item->account_id,
+                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
                     ];
                 });
 
             // Estadísticas por moneda (sin cambios)
-            $currencyStats = Movements::selectRaw('currency, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy('currency')
+            $currencyStats = Movements::selectRaw('currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
+                ->groupBy(['currency', 'account_id'])
                 ->get()
                 ->map(function ($item) {
                     return [
                         'currency_id' => $item->currency,
                         'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
                         'count' => $item->count,
-                        'total_amount' => $item->total_amount
+                        'total_amount' => $item->total_amount,
+                        'total_amount_neto' => $item->total_amount_neto,
+                        'account_id' => $item->account_id,
+                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
                     ];
                 });
 
             // Estadísticas por período específico separadas por moneda
-            $periodStats = Movements::selectRaw('period, currency, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy(['period', 'currency'])
+            $periodStats = Movements::selectRaw('period, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
+                ->groupBy(['period', 'currency', 'account_id'])
                 ->orderBy('period', 'desc')
                 ->get()
                 ->map(function ($item) {
@@ -315,15 +333,18 @@ class MovementsController extends Controller
                         'currency_id' => $item->currency,
                         'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
                         'count' => $item->count,
-                        'total_amount' => $item->total_amount
+                        'total_amount' => $item->total_amount,
+                        'total_amount_neto' => $item->total_amount_neto,
+                        'account_id' => $item->account_id,
+                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
                     ];
                 });
 
             // Estadísticas por curso separadas por moneda
             $courseStats = Movements::with('course')
-                ->selectRaw('course_id, currency, COUNT(*) as count, SUM(amount) as total_amount')
+                ->selectRaw('course_id, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
                 ->whereNotNull('course_id')
-                ->groupBy(['course_id', 'currency'])
+                ->groupBy(['course_id', 'currency', 'account_id'])
                 ->get()
                 ->map(function ($item) {
                     return [
@@ -332,7 +353,25 @@ class MovementsController extends Controller
                         'currency_id' => $item->currency,
                         'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
                         'count' => $item->count,
-                        'total_amount' => $item->total_amount
+                        'total_amount' => $item->total_amount,
+                        'total_amount_neto' => $item->total_amount_neto,
+                        'account_id' => $item->account_id,
+                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
+                    ];
+                });
+
+            // Estadísticas por cuenta separadas 
+            $accountStats = Movements::with('account')
+                ->selectRaw('account_id, COUNT(*) as count, SUM(amount) as total_amount')
+                ->groupBy(['account_id'])
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'account_id' => $item->account_id,  
+                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta',
+                        'count' => $item->count,
+                        'total_amount' => $item->total_amount,
+                        'total_amount_neto' => $item->total_amount_neto
                     ];
                 });
 
@@ -347,11 +386,12 @@ class MovementsController extends Controller
                 'by_month_current_year' => $monthStats,
                 'by_currency' => $currencyStats,
                 'by_period' => $periodStats,
-                'by_course' => $courseStats
+                'by_course' => $courseStats,
+                'by_account' => $accountStats
             ], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al obtener las estadísticas'], 500);
+            return response()->json(['error' => 'Error al obtener las estadísticas', 'details' => $e->getMessage()], 500);
         }
     }
 
