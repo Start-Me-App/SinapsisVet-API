@@ -11,6 +11,8 @@ use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Inscriptions;
 use App\Models\ResponseStripe;
+use App\Models\Movements;
+use App\Models\Courses;
 use App\Http\Controllers\Controller;
 use App\Support\Email\OrdenDeCompraEmail;
 
@@ -94,6 +96,20 @@ class StripeWebhookController extends Controller
                 }
             }
         }
+
+        // Crear movimientos para cada item del pedido
+        foreach($orderDetail as $item){
+            $course = Courses::find($item->course_id);
+            $movement = new Movements();
+            $movement->amount = $item->price;
+            $movement->amount_neto = $item->price; // Para Stripe no aplicamos comisión aquí
+            $movement->currency = 1; // USD para Stripe
+            $movement->description = 'Pago de suscripción Stripe - Orden #'.$order->id.' - Curso: '.$course->title;
+            $movement->course_id = $item->course_id;
+            $movement->period = date('m-Y');
+            $movement->account_id = 1; // Stripe no tiene account_id específico
+            $movement->save();
+        }
         
         Log::info('Pago exitoso:', ['payment_intent' => $event->data->object->id]);
     }
@@ -143,6 +159,8 @@ class StripeWebhookController extends Controller
                         $inscripcion->save();
                     }
                 }
+
+              
             }
         }
         

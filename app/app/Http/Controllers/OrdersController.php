@@ -43,7 +43,12 @@ class OrdersController extends Controller
     public function acceptOrder(Request $request,$order_id)
     {
         $installments = $request->input('installments');
-
+        $account_id = $request->input('account_id');
+        $commission_percentage = $request->input('commission_percentage', 0);
+        $currency = $request->input('currency');
+        if(!$installments && !$account_id){
+            return response()->json(['error' => 'Se necesita una cuenta para registrar el pago cuando no hay cuotas'], 500);
+        }
 
         $order = Order::find($order_id);
 
@@ -89,9 +94,21 @@ class OrdersController extends Controller
 
                     $order->installments = $installments;
                     $order->save(); 
-                    
+                } else {
+                    // Crear movimientos cuando no hay cuotas
+                    foreach($orderDetails as $item){
+                        $course = Courses::find($item->course_id);
+                        $movement = new Movements();
+                        $movement->amount = $item->price;
+                        $movement->amount_neto = $item->price - ($item->price * $commission_percentage / 100);
+                        $movement->currency = $currency; // ARS para transferencia
+                        $movement->description = 'Pago por transferencia - Orden #'.$order->id.' - Curso: '.$course->title;
+                        $movement->course_id = $item->course_id;
+                        $movement->period = date('m-Y');
+                        $movement->account_id = $account_id;
+                        $movement->save();
+                    }
                 }
-
 
             }catch(\Exception $e){
                 return response()->json(['error' => $e->getMessage()], 500);

@@ -21,6 +21,8 @@ use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Inscriptions;
 use App\Support\Email\OrdenDeCompraEmail;
+use App\Models\Movements;
+use App\Models\Courses;
 
 final class WebHook extends MercadoPago
 {
@@ -131,6 +133,20 @@ final class WebHook extends MercadoPago
                     }
                 }
 
+            }
+
+              // Crear movimientos para cada item del pedido
+              foreach($orderDetail as $item){
+                $course = Courses::find($item->course_id);
+                $movement = new Movements();
+                $movement->amount = $item->price;
+                $movement->amount_neto = $item->price; // Averiguar comision
+                $movement->currency = 2; // Pesos argentinos para mercado pago
+                $movement->description = 'Pago por mercado pago - Orden #'.$order->id.' - Curso: '.$course->title;
+                $movement->course_id = $item->course_id;
+                $movement->period = date('m-Y');
+                $movement->account_id = 1; // guardar en account_id de mercado pago
+                $movement->save();
             }
         }
 
