@@ -233,7 +233,7 @@ use App\Http\Controllers\AccountsController;
             Route::get('/{account_id}', [AccountsController::class,'getById'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::get('/{account_id}/stats', [AccountsController::class,'getStats'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::post('', [AccountsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
-            Route::put('/{account_id}', [AccountsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/{account_id}', [AccountsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::delete('/{account_id}', [AccountsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
