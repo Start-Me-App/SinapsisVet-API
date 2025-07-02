@@ -338,7 +338,7 @@ class OrdersController extends Controller
             $orderDetails->quantity = 1;
             $orderDetails->save();
 
-            $total += $item['unit_price'];
+            $total += $orderDetails->price;
         }
         if($discount_percentage > 0){
             $order->discount_amount_ars = $total * $discount_percentage / 100;
