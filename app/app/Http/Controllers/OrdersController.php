@@ -328,6 +328,13 @@ class OrdersController extends Controller
             $orderDetails->course_id = $item['course_id'];
             $orderDetails->price = $item['unit_price'];
             $orderDetails->with_workshop = $item['with_workshop'];
+            if($item['with_workshop'] == 1){
+                if($request_data['payment_method_id'] == 1 || $request_data['payment_method_id'] == 2){ # 1 mp y 2 transf
+                    $orderDetails->price = $item['unit_price'] + env('WORKSHOP_PRICE_ARS');
+                }else{ # 3 stripe y 4 paypal
+                    $orderDetails->price = $item['unit_price'] + env('WORKSHOP_PRICE_USD');
+                }
+            }
             $orderDetails->quantity = 1;
             $orderDetails->save();
 
