@@ -284,6 +284,9 @@ class MovementsController extends Controller
             $totalBalanceQuery = clone $baseQuery;
             $totalBalances = $totalBalanceQuery->selectRaw('
                 currency,
+                COUNT(*) as total_movements,
+                COUNT(CASE WHEN amount > 0 THEN 1 END) as income_movements,
+                COUNT(CASE WHEN amount < 0 THEN 1 END) as outcome_movements,
                 SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
                 SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as outcome
             ')
@@ -295,15 +298,27 @@ class MovementsController extends Controller
             $balance_ars_outcome = 0;
             $balance_usd_income = 0;
             $balance_usd_outcome = 0;
+            $balance_ars_total_movements = 0;
+            $balance_ars_income_movements = 0;
+            $balance_ars_outcome_movements = 0;
+            $balance_usd_total_movements = 0;
+            $balance_usd_income_movements = 0;
+            $balance_usd_outcome_movements = 0;
 
             // Asignar valores según moneda
             foreach ($totalBalances as $balance) {
                 if ($balance->currency == 2) { // ARS
                     $balance_ars_income = $balance->income;
                     $balance_ars_outcome = $balance->outcome;
+                    $balance_ars_total_movements = $balance->total_movements;
+                    $balance_ars_income_movements = $balance->income_movements;
+                    $balance_ars_outcome_movements = $balance->outcome_movements;
                 } elseif ($balance->currency == 1) { // USD
                     $balance_usd_income = $balance->income;
                     $balance_usd_outcome = $balance->outcome;
+                    $balance_usd_total_movements = $balance->total_movements;
+                    $balance_usd_income_movements = $balance->income_movements;
+                    $balance_usd_outcome_movements = $balance->outcome_movements;
                 }
             }
 
@@ -316,6 +331,9 @@ class MovementsController extends Controller
             $accountBalances = $accountBalanceQuery->selectRaw('
                 account_id,
                 currency,
+                COUNT(*) as total_movements,
+                COUNT(CASE WHEN amount > 0 THEN 1 END) as income_movements,
+                COUNT(CASE WHEN amount < 0 THEN 1 END) as outcome_movements,
                 SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
                 SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as outcome
             ')
@@ -334,14 +352,26 @@ class MovementsController extends Controller
                 $account_ars_outcome = 0;
                 $account_usd_income = 0;
                 $account_usd_outcome = 0;
+                $account_ars_total_movements = 0;
+                $account_ars_income_movements = 0;
+                $account_ars_outcome_movements = 0;
+                $account_usd_total_movements = 0;
+                $account_usd_income_movements = 0;
+                $account_usd_outcome_movements = 0;
 
                 foreach ($balances as $balance) {
                     if ($balance->currency == 2) { // ARS
                         $account_ars_income = $balance->income;
                         $account_ars_outcome = $balance->outcome;
+                        $account_ars_total_movements = $balance->total_movements;
+                        $account_ars_income_movements = $balance->income_movements;
+                        $account_ars_outcome_movements = $balance->outcome_movements;
                     } elseif ($balance->currency == 1) { // USD
                         $account_usd_income = $balance->income;
                         $account_usd_outcome = $balance->outcome;
+                        $account_usd_total_movements = $balance->total_movements;
+                        $account_usd_income_movements = $balance->income_movements;
+                        $account_usd_outcome_movements = $balance->outcome_movements;
                     }
                 }
 
@@ -351,9 +381,15 @@ class MovementsController extends Controller
                     'balance_ars_income' => (float) $account_ars_income,
                     'balance_ars_outcome' => (float) $account_ars_outcome,
                     'balance_ars_profit' => (float) ($account_ars_income - $account_ars_outcome),
+                    'balance_ars_total_movements' => (int) $account_ars_total_movements,
+                    'balance_ars_income_movements' => (int) $account_ars_income_movements,
+                    'balance_ars_outcome_movements' => (int) $account_ars_outcome_movements,
                     'balance_usd_income' => (float) $account_usd_income,
                     'balance_usd_outcome' => (float) $account_usd_outcome,
-                    'balance_usd_profit' => (float) ($account_usd_income - $account_usd_outcome)
+                    'balance_usd_profit' => (float) ($account_usd_income - $account_usd_outcome),
+                    'balance_usd_total_movements' => (int) $account_usd_total_movements,
+                    'balance_usd_income_movements' => (int) $account_usd_income_movements,
+                    'balance_usd_outcome_movements' => (int) $account_usd_outcome_movements
                 ];
             }
 
@@ -362,6 +398,9 @@ class MovementsController extends Controller
             $totalBalanceNetoQuery = clone $baseQuery;
             $totalBalancesNeto = $totalBalanceNetoQuery->selectRaw('
                 currency,
+                COUNT(*) as total_movements,
+                COUNT(CASE WHEN amount_neto > 0 THEN 1 END) as income_movements,
+                COUNT(CASE WHEN amount_neto < 0 THEN 1 END) as outcome_movements,
                 SUM(CASE WHEN amount_neto > 0 THEN amount_neto ELSE 0 END) as income,
                 SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as outcome
             ')
@@ -373,15 +412,27 @@ class MovementsController extends Controller
             $balance_neto_ars_outcome = 0;
             $balance_neto_usd_income = 0;
             $balance_neto_usd_outcome = 0;
+            $balance_neto_ars_total_movements = 0;
+            $balance_neto_ars_income_movements = 0;
+            $balance_neto_ars_outcome_movements = 0;
+            $balance_neto_usd_total_movements = 0;
+            $balance_neto_usd_income_movements = 0;
+            $balance_neto_usd_outcome_movements = 0;
 
             // Asignar valores según moneda
             foreach ($totalBalancesNeto as $balance) {
                 if ($balance->currency == 2) { // ARS
                     $balance_neto_ars_income = $balance->income;
                     $balance_neto_ars_outcome = $balance->outcome;
+                    $balance_neto_ars_total_movements = $balance->total_movements;
+                    $balance_neto_ars_income_movements = $balance->income_movements;
+                    $balance_neto_ars_outcome_movements = $balance->outcome_movements;
                 } elseif ($balance->currency == 1) { // USD
                     $balance_neto_usd_income = $balance->income;
                     $balance_neto_usd_outcome = $balance->outcome;
+                    $balance_neto_usd_total_movements = $balance->total_movements;
+                    $balance_neto_usd_income_movements = $balance->income_movements;
+                    $balance_neto_usd_outcome_movements = $balance->outcome_movements;
                 }
             }
 
@@ -394,6 +445,9 @@ class MovementsController extends Controller
             $accountBalancesNeto = $accountBalanceNetoQuery->selectRaw('
                 account_id,
                 currency,
+                COUNT(*) as total_movements,
+                COUNT(CASE WHEN amount_neto > 0 THEN 1 END) as income_movements,
+                COUNT(CASE WHEN amount_neto < 0 THEN 1 END) as outcome_movements,
                 SUM(CASE WHEN amount_neto > 0 THEN amount_neto ELSE 0 END) as income,
                 SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as outcome
             ')
@@ -412,14 +466,26 @@ class MovementsController extends Controller
                 $account_neto_ars_outcome = 0;
                 $account_neto_usd_income = 0;
                 $account_neto_usd_outcome = 0;
+                $account_neto_ars_total_movements = 0;
+                $account_neto_ars_income_movements = 0;
+                $account_neto_ars_outcome_movements = 0;
+                $account_neto_usd_total_movements = 0;
+                $account_neto_usd_income_movements = 0;
+                $account_neto_usd_outcome_movements = 0;
 
                 foreach ($balances as $balance) {
                     if ($balance->currency == 2) { // ARS
                         $account_neto_ars_income = $balance->income;
                         $account_neto_ars_outcome = $balance->outcome;
+                        $account_neto_ars_total_movements = $balance->total_movements;
+                        $account_neto_ars_income_movements = $balance->income_movements;
+                        $account_neto_ars_outcome_movements = $balance->outcome_movements;
                     } elseif ($balance->currency == 1) { // USD
                         $account_neto_usd_income = $balance->income;
                         $account_neto_usd_outcome = $balance->outcome;
+                        $account_neto_usd_total_movements = $balance->total_movements;
+                        $account_neto_usd_income_movements = $balance->income_movements;
+                        $account_neto_usd_outcome_movements = $balance->outcome_movements;
                     }
                 }
 
@@ -429,9 +495,15 @@ class MovementsController extends Controller
                     'balance_ars_income' => (float) $account_neto_ars_income,
                     'balance_ars_outcome' => (float) $account_neto_ars_outcome,
                     'balance_ars_profit' => (float) ($account_neto_ars_income - $account_neto_ars_outcome),
+                    'balance_ars_total_movements' => (int) $account_neto_ars_total_movements,
+                    'balance_ars_income_movements' => (int) $account_neto_ars_income_movements,
+                    'balance_ars_outcome_movements' => (int) $account_neto_ars_outcome_movements,
                     'balance_usd_income' => (float) $account_neto_usd_income,
                     'balance_usd_outcome' => (float) $account_neto_usd_outcome,
-                    'balance_usd_profit' => (float) ($account_neto_usd_income - $account_neto_usd_outcome)
+                    'balance_usd_profit' => (float) ($account_neto_usd_income - $account_neto_usd_outcome),
+                    'balance_usd_total_movements' => (int) $account_neto_usd_total_movements,
+                    'balance_usd_income_movements' => (int) $account_neto_usd_income_movements,
+                    'balance_usd_outcome_movements' => (int) $account_neto_usd_outcome_movements
                 ];
             }
 
@@ -440,18 +512,30 @@ class MovementsController extends Controller
                     'balance_ars_income' => (float) $balance_ars_income,
                     'balance_ars_outcome' => (float) $balance_ars_outcome,
                     'balance_ars_profit' => (float) $balance_ars_profit,
+                    'balance_ars_total_movements' => (int) $balance_ars_total_movements,
+                    'balance_ars_income_movements' => (int) $balance_ars_income_movements,
+                    'balance_ars_outcome_movements' => (int) $balance_ars_outcome_movements,
                     'balance_usd_income' => (float) $balance_usd_income,
                     'balance_usd_outcome' => (float) $balance_usd_outcome,
                     'balance_usd_profit' => (float) $balance_usd_profit,
+                    'balance_usd_total_movements' => (int) $balance_usd_total_movements,
+                    'balance_usd_income_movements' => (int) $balance_usd_income_movements,
+                    'balance_usd_outcome_movements' => (int) $balance_usd_outcome_movements,
                     'by_accounts' => $byAccounts
                 ],
                 'neto' => [
                     'balance_ars_income' => (float) $balance_neto_ars_income,
                     'balance_ars_outcome' => (float) $balance_neto_ars_outcome,
                     'balance_ars_profit' => (float) $balance_neto_ars_profit,
+                    'balance_ars_total_movements' => (int) $balance_neto_ars_total_movements,
+                    'balance_ars_income_movements' => (int) $balance_neto_ars_income_movements,
+                    'balance_ars_outcome_movements' => (int) $balance_neto_ars_outcome_movements,
                     'balance_usd_income' => (float) $balance_neto_usd_income,
                     'balance_usd_outcome' => (float) $balance_neto_usd_outcome,
                     'balance_usd_profit' => (float) $balance_neto_usd_profit,
+                    'balance_usd_total_movements' => (int) $balance_neto_usd_total_movements,
+                    'balance_usd_income_movements' => (int) $balance_neto_usd_income_movements,
+                    'balance_usd_outcome_movements' => (int) $balance_neto_usd_outcome_movements,
                     'by_accounts' => $byAccountsNeto
                 ]
             ], 200);
