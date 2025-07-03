@@ -250,144 +250,210 @@ class MovementsController extends Controller
     }
 
     /**
-     * Obtener estadísticas de movimientos
+     * Obtener estadísticas de movimientos con filtros opcionales
+     * Devuelve balances de ingresos, egresos y ganancias por moneda
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function getStatistics(): JsonResponse
+    public function getStatistics(Request $request): JsonResponse
     {
         try {
-            $totalMovements = Movements::count();
-            
-            // Total por moneda separado
-            $totalAmountByCurrency = Movements::selectRaw('currency, account_id, SUM(amount) as total_amount')
-                ->groupBy(['currency', 'account_id'])
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    $currencyName = Movements::CURRENCIES[$item->currency] ?? 'Unknown';
-                    return [$currencyName => $item->total_amount];
-                });
+            // Crear query base con filtros opcionales
+            $baseQuery = Movements::query();
 
-            // Estadísticas por año separadas por moneda
-            $yearStats = Movements::selectRaw('RIGHT(period, 4) as year, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy(['year', 'currency', 'account_id'])
-                ->orderBy('year', 'desc')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'year' => $item->year,
-                        'currency_id' => $item->currency,
-                        'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
-                        'count' => $item->count,
-                        'total_amount' => $item->total_amount,
-                        'total_amount_neto' => $item->total_amount_neto,
-                        'account_id' => $item->account_id,
-                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
-                    ];
-                });
+            // Aplicar filtros si están presentes
+            if ($request->has('course_id') && $request->course_id) {
+                $baseQuery->byCourse($request->course_id);
+            }
 
-            // Estadísticas por mes del año actual separadas por moneda
-            $currentYear = date('Y');
-            $monthStats = Movements::selectRaw('LEFT(period, 2) as month, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
-                ->where('period', 'like', '%/' . $currentYear)
-                ->groupBy(['month', 'currency', 'account_id'])
-                ->orderBy('month')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'month' => $item->month,
-                        'currency_id' => $item->currency,
-                        'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
-                        'count' => $item->count,
-                        'total_amount' => $item->total_amount,
-                        'total_amount_neto' => $item->total_amount_neto,
-                        'account_id' => $item->account_id,
-                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
-                    ];
-                });
+            if ($request->has('period') && $request->period) {
+                $baseQuery->byPeriod($request->period);
+            }
 
-            // Estadísticas por moneda (sin cambios)
-            $currencyStats = Movements::selectRaw('currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy(['currency', 'account_id'])
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'currency_id' => $item->currency,
-                        'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
-                        'count' => $item->count,
-                        'total_amount' => $item->total_amount,
-                        'total_amount_neto' => $item->total_amount_neto,
-                        'account_id' => $item->account_id,
-                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
-                    ];
-                });
+            if ($request->has('account_id') && $request->account_id) {
+                $baseQuery->where('account_id', $request->account_id);
+            }
 
-            // Estadísticas por período específico separadas por moneda
-            $periodStats = Movements::selectRaw('period, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy(['period', 'currency', 'account_id'])
-                ->orderBy('period', 'desc')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'period' => $item->period,
-                        'currency_id' => $item->currency,
-                        'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
-                        'count' => $item->count,
-                        'total_amount' => $item->total_amount,
-                        'total_amount_neto' => $item->total_amount_neto,
-                        'account_id' => $item->account_id,
-                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
-                    ];
-                });
+            if ($request->has('currency') && $request->currency) {
+                $baseQuery->byCurrency($request->currency);
+            }
 
-            // Estadísticas por curso separadas por moneda
-            $courseStats = Movements::with('course')
-                ->selectRaw('course_id, currency, account_id, COUNT(*) as count, SUM(amount) as total_amount')
-                ->whereNotNull('course_id')
-                ->groupBy(['course_id', 'currency', 'account_id'])
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'course_id' => $item->course_id,
-                        'course_name' => $item->course ? $item->course->name : 'Curso no encontrado',
-                        'currency_id' => $item->currency,
-                        'currency_name' => Movements::CURRENCIES[$item->currency] ?? 'Unknown',
-                        'count' => $item->count,
-                        'total_amount' => $item->total_amount,
-                        'total_amount_neto' => $item->total_amount_neto,
-                        'account_id' => $item->account_id,
-                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta'
-                    ];
-                });
+            // ============ CALCULAR BALANCES CON AMOUNT ============
+            // Calcular balances totales por moneda
+            $totalBalanceQuery = clone $baseQuery;
+            $totalBalances = $totalBalanceQuery->selectRaw('
+                currency,
+                SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as outcome
+            ')
+            ->groupBy('currency')
+            ->get();
 
-            // Estadísticas por cuenta separadas 
-            $accountStats = Movements::with('account')
-                ->selectRaw('account_id, COUNT(*) as count, SUM(amount) as total_amount')
-                ->groupBy(['account_id'])
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'account_id' => $item->account_id,  
-                        'account_name' => Cuentas::where('id', $item->account_id)->first()->nombre ?? 'Sin cuenta',
-                        'count' => $item->count,
-                        'total_amount' => $item->total_amount,
-                        'total_amount_neto' => $item->total_amount_neto
-                    ];
-                });
+            // Inicializar balances con valores por defecto
+            $balance_ars_income = 0;
+            $balance_ars_outcome = 0;
+            $balance_usd_income = 0;
+            $balance_usd_outcome = 0;
 
-            // Movimientos sin curso asignado
-            $movementsWithoutCourse = Movements::whereNull('course_id')->count();
+            // Asignar valores según moneda
+            foreach ($totalBalances as $balance) {
+                if ($balance->currency == 2) { // ARS
+                    $balance_ars_income = $balance->income;
+                    $balance_ars_outcome = $balance->outcome;
+                } elseif ($balance->currency == 1) { // USD
+                    $balance_usd_income = $balance->income;
+                    $balance_usd_outcome = $balance->outcome;
+                }
+            }
+
+            // Calcular ganancias
+            $balance_ars_profit = $balance_ars_income - $balance_ars_outcome;
+            $balance_usd_profit = $balance_usd_income - $balance_usd_outcome;
+
+            // Calcular balances por cuenta
+            $accountBalanceQuery = clone $baseQuery;
+            $accountBalances = $accountBalanceQuery->selectRaw('
+                account_id,
+                currency,
+                SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as outcome
+            ')
+            ->whereNotNull('account_id')
+            ->groupBy(['account_id', 'currency'])
+            ->get();
+
+            // Agrupar por cuenta y calcular balances
+            $byAccounts = [];
+            $accountGroups = $accountBalances->groupBy('account_id');
+
+            foreach ($accountGroups as $accountId => $balances) {
+                $accountName = Cuentas::where('id', $accountId)->first()->nombre ?? 'Sin cuenta';
+                
+                $account_ars_income = 0;
+                $account_ars_outcome = 0;
+                $account_usd_income = 0;
+                $account_usd_outcome = 0;
+
+                foreach ($balances as $balance) {
+                    if ($balance->currency == 2) { // ARS
+                        $account_ars_income = $balance->income;
+                        $account_ars_outcome = $balance->outcome;
+                    } elseif ($balance->currency == 1) { // USD
+                        $account_usd_income = $balance->income;
+                        $account_usd_outcome = $balance->outcome;
+                    }
+                }
+
+                $byAccounts[] = [
+                    'account_id' => (int) $accountId,
+                    'account_name' => $accountName,
+                    'balance_ars_income' => (float) $account_ars_income,
+                    'balance_ars_outcome' => (float) $account_ars_outcome,
+                    'balance_ars_profit' => (float) ($account_ars_income - $account_ars_outcome),
+                    'balance_usd_income' => (float) $account_usd_income,
+                    'balance_usd_outcome' => (float) $account_usd_outcome,
+                    'balance_usd_profit' => (float) ($account_usd_income - $account_usd_outcome)
+                ];
+            }
+
+            // ============ CALCULAR BALANCES CON AMOUNT_NETO ============
+            // Calcular balances totales por moneda usando amount_neto
+            $totalBalanceNetoQuery = clone $baseQuery;
+            $totalBalancesNeto = $totalBalanceNetoQuery->selectRaw('
+                currency,
+                SUM(CASE WHEN amount_neto > 0 THEN amount_neto ELSE 0 END) as income,
+                SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as outcome
+            ')
+            ->groupBy('currency')
+            ->get();
+
+            // Inicializar balances neto con valores por defecto
+            $balance_neto_ars_income = 0;
+            $balance_neto_ars_outcome = 0;
+            $balance_neto_usd_income = 0;
+            $balance_neto_usd_outcome = 0;
+
+            // Asignar valores según moneda
+            foreach ($totalBalancesNeto as $balance) {
+                if ($balance->currency == 2) { // ARS
+                    $balance_neto_ars_income = $balance->income;
+                    $balance_neto_ars_outcome = $balance->outcome;
+                } elseif ($balance->currency == 1) { // USD
+                    $balance_neto_usd_income = $balance->income;
+                    $balance_neto_usd_outcome = $balance->outcome;
+                }
+            }
+
+            // Calcular ganancias neto
+            $balance_neto_ars_profit = $balance_neto_ars_income - $balance_neto_ars_outcome;
+            $balance_neto_usd_profit = $balance_neto_usd_income - $balance_neto_usd_outcome;
+
+            // Calcular balances neto por cuenta
+            $accountBalanceNetoQuery = clone $baseQuery;
+            $accountBalancesNeto = $accountBalanceNetoQuery->selectRaw('
+                account_id,
+                currency,
+                SUM(CASE WHEN amount_neto > 0 THEN amount_neto ELSE 0 END) as income,
+                SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as outcome
+            ')
+            ->whereNotNull('account_id')
+            ->groupBy(['account_id', 'currency'])
+            ->get();
+
+            // Agrupar por cuenta y calcular balances neto
+            $byAccountsNeto = [];
+            $accountGroupsNeto = $accountBalancesNeto->groupBy('account_id');
+
+            foreach ($accountGroupsNeto as $accountId => $balances) {
+                $accountName = Cuentas::where('id', $accountId)->first()->nombre ?? 'Sin cuenta';
+                
+                $account_neto_ars_income = 0;
+                $account_neto_ars_outcome = 0;
+                $account_neto_usd_income = 0;
+                $account_neto_usd_outcome = 0;
+
+                foreach ($balances as $balance) {
+                    if ($balance->currency == 2) { // ARS
+                        $account_neto_ars_income = $balance->income;
+                        $account_neto_ars_outcome = $balance->outcome;
+                    } elseif ($balance->currency == 1) { // USD
+                        $account_neto_usd_income = $balance->income;
+                        $account_neto_usd_outcome = $balance->outcome;
+                    }
+                }
+
+                $byAccountsNeto[] = [
+                    'account_id' => (int) $accountId,
+                    'account_name' => $accountName,
+                    'balance_ars_income' => (float) $account_neto_ars_income,
+                    'balance_ars_outcome' => (float) $account_neto_ars_outcome,
+                    'balance_ars_profit' => (float) ($account_neto_ars_income - $account_neto_ars_outcome),
+                    'balance_usd_income' => (float) $account_neto_usd_income,
+                    'balance_usd_outcome' => (float) $account_neto_usd_outcome,
+                    'balance_usd_profit' => (float) ($account_neto_usd_income - $account_neto_usd_outcome)
+                ];
+            }
 
             return response()->json([
-                'total_movements' => $totalMovements,
-                'total_amount_by_currency' => $totalAmountByCurrency,
-                'movements_without_course' => $movementsWithoutCourse,
-                'by_year' => $yearStats,
-                'by_month_current_year' => $monthStats,
-                'by_currency' => $currencyStats,
-                'by_period' => $periodStats,
-                'by_course' => $courseStats,
-                'by_account' => $accountStats
+                'bruto' => [
+                    'balance_ars_income' => (float) $balance_ars_income,
+                    'balance_ars_outcome' => (float) $balance_ars_outcome,
+                    'balance_ars_profit' => (float) $balance_ars_profit,
+                    'balance_usd_income' => (float) $balance_usd_income,
+                    'balance_usd_outcome' => (float) $balance_usd_outcome,
+                    'balance_usd_profit' => (float) $balance_usd_profit,
+                    'by_accounts' => $byAccounts
+                ],
+                'neto' => [
+                    'balance_ars_income' => (float) $balance_neto_ars_income,
+                    'balance_ars_outcome' => (float) $balance_neto_ars_outcome,
+                    'balance_ars_profit' => (float) $balance_neto_ars_profit,
+                    'balance_usd_income' => (float) $balance_neto_usd_income,
+                    'balance_usd_outcome' => (float) $balance_neto_usd_outcome,
+                    'balance_usd_profit' => (float) $balance_neto_usd_profit,
+                    'by_accounts' => $byAccountsNeto
+                ]
             ], 200);
 
         } catch (\Exception $e) {
