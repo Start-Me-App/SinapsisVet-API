@@ -82,7 +82,7 @@ class MovementsController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'amount' => 'required|numeric',
+                'amount' => 'required|numeric',                
                 'currency' => 'required|integer|in:1,2',
                 'period' => 'required|string',
                 'description' => 'nullable|string|max:500',
@@ -99,6 +99,7 @@ class MovementsController extends Controller
 
             $movement = new Movements();
             $movement->amount = $request->amount;
+            $movement->amount_neto = $request->amount_neto;
             $movement->currency = $request->currency;
             $movement->period = $request->period;
             $movement->description = $request->description;
