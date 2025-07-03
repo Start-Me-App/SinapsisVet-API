@@ -96,11 +96,41 @@ class OrdersController extends Controller
                     $order->save(); 
                 } else {
                     // Crear movimientos cuando no hay cuotas
+                    // Calcular el total original para aplicar descuentos proporcionalmente
+                    $totalOriginal = $orderDetails->sum('price');
+                    $totalConDescuento = $totalOriginal;
+                    
+                    // Aplicar descuentos porcentuales
+                    if($order->discount_percentage > 0){
+                        $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage / 100);
+                    }
+                    if($order->discount_percentage_coupon > 0){
+                        $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage_coupon / 100);
+                    }
+                    
+                    // Aplicar descuentos por monto fijo según la moneda
+                    if($currency == 2 && $order->discount_amount_ars > 0){ // ARS
+                        $totalConDescuento = $totalConDescuento - $order->discount_amount_ars;
+                    }
+                    if($currency == 1 && $order->discount_amount_usd > 0){ // USD
+                        $totalConDescuento = $totalConDescuento - $order->discount_amount_usd;
+                    }
+                    
+                    // Asegurar que el total no sea negativo
+                    $totalConDescuento = max(0, $totalConDescuento);
+                    
+                    // Calcular factor de descuento para aplicar proporcionalmente a cada item
+                    $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
+                    
                     foreach($orderDetails as $item){
                         $course = Courses::find($item->course_id);
                         $movement = new Movements();
-                        $movement->amount = $item->price;
-                        $movement->amount_neto = $item->price - ($item->price * $commission_percentage / 100);
+                        
+                        // Aplicar descuento proporcionalmente al precio del item
+                        $precioConDescuento = $item->price * $factorDescuento;
+                        
+                        $movement->amount = $precioConDescuento;
+                        $movement->amount_neto = $precioConDescuento - ($precioConDescuento * $commission_percentage / 100);
                         $movement->currency = $currency; // ARS para transferencia
                         $movement->description = 'Pago por transferencia - Orden #'.$order->id.' - Curso: '.$course->title;
                         $movement->course_id = $item->course_id;
