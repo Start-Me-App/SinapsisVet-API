@@ -729,7 +729,7 @@ class CoursesController extends Controller
                 $join->on('exams.id', '=', 'exams_results.exam_id')
                     ->where('exams_results.user_id', '=', $user->id);
             })
-            ->select('exams.*', DB::raw('CASE WHEN exams_results.final_grade > 6 THEN 1 ELSE 0 END as approved'))
+            ->select('exams.*', DB::raw('CASE WHEN exams_results.final_grade >= 6 THEN 1 ELSE 0 END as approved'))
             ->where('course_id', $course_id)->where('active',1)->get();
 
           /*   $lessons = Lessons::where('course_id',$course_id)->get();
