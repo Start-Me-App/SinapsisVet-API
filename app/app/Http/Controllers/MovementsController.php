@@ -16,7 +16,7 @@ class MovementsController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function getAll(Request $request): JsonResponse
+    public function getAll(Request $request)
     {
         try {
             $query = Movements::query();
@@ -38,7 +38,15 @@ class MovementsController extends Controller
                 $query->byAccount($request->account_id);
             }
 
-            $movements = $query->orderBy('created_at', 'desc')->get();
+            // Incluir relaciones para el CSV
+            $movements = $query->with(['course', 'account'])
+                              ->orderBy('created_at', 'desc')
+                              ->get();
+
+            // Si se solicita descarga como CSV
+            if ($request->has('download') && $request->download == 1) {
+                return $this->generateCsv($movements);
+            }
 
             return response()->json([
                 'data' => $movements,
@@ -48,6 +56,57 @@ class MovementsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener los movimientos'], 500);
         }
+    }
+
+    /**
+     * Generar CSV de movimientos
+     *
+     * @param $movements
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    private function generateCsv($movements)
+    {
+        $filename = 'movimientos_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        return response()->streamDownload(function () use ($movements) {
+            $file = fopen('php://output', 'w');
+            
+            // BOM para UTF-8 (para que Excel abra correctamente los caracteres especiales)
+            fwrite($file, "\xEF\xBB\xBF");
+            
+            // Encabezados del CSV
+            fputcsv($file, [
+                'ID',
+                'Monto Bruto',
+                'Monto Neto',
+                'Moneda',
+                'Período',
+                'Descripción',
+                'Curso',
+                'Cuenta'
+            ], ';');
+
+            // Datos
+            foreach ($movements as $movement) {
+                fputcsv($file, [
+                    $movement->id,
+                    $movement->amount,
+                    $movement->amount_neto ?? '',
+                    $movement->currency_name,
+                    $movement->period,
+                    $movement->description ?? '',
+                    $movement->course->title ?? '',
+                    $movement->account->nombre ?? ''
+                ], ';');
+            }
+
+            fclose($file);
+        }, $filename, $headers);
     }
 
     /**
