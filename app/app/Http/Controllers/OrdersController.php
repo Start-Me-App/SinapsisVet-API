@@ -248,18 +248,46 @@ class OrdersController extends Controller
 
             #find order details
             $orderDetails = OrderDetail::where('order_id', $order->id)->get();
+            
+            // Aplicar descuentos como en acceptOrder
+            $totalOriginal = $orderDetails->sum('price');
+            $totalConDescuento = $totalOriginal;
+            
+            // Aplicar descuentos porcentuales
+            if($order->discount_percentage > 0){
+                $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage / 100);
+            }
+            if($order->discount_percentage_coupon > 0){
+                $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage_coupon / 100);
+            }
+            
+            // Aplicar descuentos por monto fijo según la moneda (cuotas siempre en ARS)
+            if($order->discount_amount_ars > 0){
+                $totalConDescuento = $totalConDescuento - $order->discount_amount_ars;
+            }
+            
+            // Asegurar que el total no sea negativo
+            $totalConDescuento = max(0, $totalConDescuento);
+            
+            // Calcular factor de descuento para aplicar proporcionalmente a cada item
+            $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
+            
             foreach($orderDetails as $item){
                 $course = Courses::find($item->course_id);
                 if($installmentDetail->paid == 0){
-                $movement = new Movements();
-                $movement->amount = $item->price / $installment->amount;
-                $movement->amount_neto = ($item->price / $installment->amount) - ($item->price / $installment->amount) * $commission_percentage / 100;
-                $movement->currency = 2;
-                $movement->description = 'Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
-                $movement->course_id = $item->course_id;
-                $movement->period = date('m-Y');
-                $movement->account_id = $request->input('account_id');
-                $movement->save();
+                    // Aplicar descuento proporcionalmente al precio del item
+                    $precioConDescuento = $item->price * $factorDescuento;
+                    $montoCuota = $precioConDescuento / $installment->amount;
+                    
+                    $movement = new Movements();
+                    $movement->amount = $montoCuota;
+                    $movement->amount_neto = $montoCuota - ($montoCuota * $commission_percentage / 100);
+                    $movement->currency = 2;
+                    $movement->description = 'Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
+                    $movement->course_id = $item->course_id;
+                    $movement->period = date('m-Y');
+                    $movement->account_id = $request->input('account_id');
+                    $movement->save();
                 }
             }
         }else{
