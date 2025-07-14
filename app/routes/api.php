@@ -18,6 +18,8 @@ use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\Stripe\{Charges,StripeWebhookController,PaymentIntentController};  
 use App\Http\Controllers\DiscountsController;
 use App\Http\Controllers\CouponsController;
+use App\Http\Controllers\MovementsController;
+use App\Http\Controllers\AccountsController;
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -188,6 +190,8 @@ use App\Http\Controllers\CouponsController;
             Route::get('/{order_id}/installments', [OrdersController::class,'getInstallments'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::patch('/{installment_id}/update', [OrdersController::class,'updateInstallmentDetail'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::get('/installments/all', [OrdersController::class,'getAllInstallments'])->middleware(ControlAccessMiddleware::class.':admin');
+      
+            Route::post('/create', [OrdersController::class,'createOrder'])->middleware(ControlAccessMiddleware::class.':admin');
         }); 
 
 
@@ -197,6 +201,8 @@ use App\Http\Controllers\CouponsController;
             Route::post('/', [DiscountsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::patch('/', [DiscountsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::delete('/{discount_id}', [DiscountsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
+       
+            Route::get('/user/{user_id}', [OrdersController::class,'getDiscountsForUser'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
         #create route group for coupons
@@ -205,6 +211,30 @@ use App\Http\Controllers\CouponsController;
             Route::post('/', [CouponsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::patch('/{coupon_id}', [CouponsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::delete('/{coupon_id}', [CouponsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
+        });
+
+        #create route group for movements
+        Route::group(['prefix' => 'movements'], function () {
+            Route::get('', [MovementsController::class,'getAll'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/currencies', [MovementsController::class,'getCurrencies'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/statistics', [MovementsController::class,'getStatistics'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/period/{period}', [MovementsController::class,'getByPeriod'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/year/{year}', [MovementsController::class,'getByYear'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/course/{course_id}', [MovementsController::class,'getByCourse'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{movement_id}', [MovementsController::class,'getById'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('', [MovementsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::put('/{movement_id}', [MovementsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{movement_id}', [MovementsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
+        });
+
+        #create route group for accounts
+        Route::group(['prefix' => 'accounts'], function () {
+            Route::get('', [AccountsController::class,'getAll'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{account_id}', [AccountsController::class,'getById'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{account_id}/stats', [AccountsController::class,'getStats'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('', [AccountsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/{account_id}', [AccountsController::class,'update'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{account_id}', [AccountsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
        

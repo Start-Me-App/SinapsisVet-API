@@ -7,9 +7,11 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Order,OrderDetail,Inscriptions,Installments,InstallmentDetail};
+use App\Models\{Order,OrderDetail,Inscriptions,Installments,InstallmentDetail,Discounts,Movements,Courses};
 
+use App\Helper\TelegramNotification;
 use Illuminate\Support\Facades\DB;
+
 
 use App\Support\TokenManager;
 
@@ -41,7 +43,12 @@ class OrdersController extends Controller
     public function acceptOrder(Request $request,$order_id)
     {
         $installments = $request->input('installments');
-
+        $account_id = $request->input('account_id');
+        $commission_percentage = $request->input('commission_percentage', 0);
+        $currency = $request->input('currency');
+        if(!$installments && !$account_id){
+            return response()->json(['error' => 'Se necesita una cuenta para registrar el pago cuando no hay cuotas'], 500);
+        }
 
         $order = Order::find($order_id);
 
@@ -87,9 +94,51 @@ class OrdersController extends Controller
 
                     $order->installments = $installments;
                     $order->save(); 
+                } else {
+                    // Crear movimientos cuando no hay cuotas
+                    // Calcular el total original para aplicar descuentos proporcionalmente
+                    $totalOriginal = $orderDetails->sum('price');
+                    $totalConDescuento = $totalOriginal;
                     
+                    // Aplicar descuentos porcentuales
+                    if($order->discount_percentage > 0){
+                        $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage / 100);
+                    }
+                    if($order->discount_percentage_coupon > 0){
+                        $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage_coupon / 100);
+                    }
+                    
+                    // Aplicar descuentos por monto fijo según la moneda
+                    if($currency == 2 && $order->discount_amount_ars > 0){ // ARS
+                        $totalConDescuento = $totalConDescuento - $order->discount_amount_ars;
+                    }
+                    if($currency == 1 && $order->discount_amount_usd > 0){ // USD
+                        $totalConDescuento = $totalConDescuento - $order->discount_amount_usd;
+                    }
+                    
+                    // Asegurar que el total no sea negativo
+                    $totalConDescuento = max(0, $totalConDescuento);
+                    
+                    // Calcular factor de descuento para aplicar proporcionalmente a cada item
+                    $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
+                    
+                    foreach($orderDetails as $item){
+                        $course = Courses::find($item->course_id);
+                        $movement = new Movements();
+                        
+                        // Aplicar descuento proporcionalmente al precio del item
+                        $precioConDescuento = $item->price * $factorDescuento;
+                        
+                        $movement->amount = $precioConDescuento;
+                        $movement->amount_neto = $precioConDescuento - ($precioConDescuento * $commission_percentage / 100);
+                        $movement->currency = $currency; // ARS para transferencia
+                        $movement->description = 'Pago por transferencia - Orden #'.$order->id.' - Curso: '.$course->title;
+                        $movement->course_id = $item->course_id;
+                        $movement->period = date('m-Y');
+                        $movement->account_id = $account_id;
+                        $movement->save();
+                    }
                 }
-
 
             }catch(\Exception $e){
                 return response()->json(['error' => $e->getMessage()], 500);
@@ -177,15 +226,74 @@ class OrdersController extends Controller
 
     public function updateInstallmentDetail($installment_id,Request $request)
     {
+
+        $account_id = $request->input('account_id');
+        if(!$account_id){
+            return response()->json(['error' => 'Se necesita una cuenta para registrar el pago'], 500);
+        }
+
+        $commission_percentage = $request->input('commission_percentage');
+
         $installmentDetail = InstallmentDetail::find($installment_id);
-        $installmentDetail->paid = $request->input('paid');
+        
         $installmentDetail->url_payment = $request->input('url_payment');   
         #$installmentDetail->due_date = $request->input('due_date');
         if($request->input('paid')){
             $installmentDetail->paid_date = date('Y-m-d H:i:s');
+
+
+            #find installment 
+            $installment = Installments::find($installmentDetail->installment_id);
+            $order = Order::find($installment->order_id);
+
+            #find order details
+            $orderDetails = OrderDetail::where('order_id', $order->id)->get();
+            
+            // Aplicar descuentos como en acceptOrder
+            $totalOriginal = $orderDetails->sum('price');
+            $totalConDescuento = $totalOriginal;
+            
+            // Aplicar descuentos porcentuales
+            if($order->discount_percentage > 0){
+                $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage / 100);
+            }
+            if($order->discount_percentage_coupon > 0){
+                $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage_coupon / 100);
+            }
+            
+            // Aplicar descuentos por monto fijo según la moneda (cuotas siempre en ARS)
+            if($order->discount_amount_ars > 0){
+                $totalConDescuento = $totalConDescuento - $order->discount_amount_ars;
+            }
+            
+            // Asegurar que el total no sea negativo
+            $totalConDescuento = max(0, $totalConDescuento);
+            
+            // Calcular factor de descuento para aplicar proporcionalmente a cada item
+            $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
+            
+            foreach($orderDetails as $item){
+                $course = Courses::find($item->course_id);
+                if($installmentDetail->paid == 0){
+                    // Aplicar descuento proporcionalmente al precio del item
+                    $precioConDescuento = $item->price * $factorDescuento;
+                    $montoCuota = $precioConDescuento / $installment->amount;
+                    
+                    $movement = new Movements();
+                    $movement->amount = $montoCuota;
+                    $movement->amount_neto = $montoCuota - ($montoCuota * $commission_percentage / 100);
+                    $movement->currency = 2;
+                    $movement->description = 'Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
+                    $movement->course_id = $item->course_id;
+                    $movement->period = date('m-Y');
+                    $movement->account_id = $request->input('account_id');
+                    $movement->save();
+                }
+            }
         }else{
             $installmentDetail->paid_date = null;
         }
+        $installmentDetail->paid = $request->input('paid');
         $installmentDetail->save();
 
 
@@ -237,5 +345,170 @@ class OrdersController extends Controller
             }
         }
         return response()->json(['data' => $installments], 200);
+    }
+
+
+    public function createOrder(Request $request)
+    {
+
+        $accessToken = TokenManager::getTokenFromRequest();
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        $request_data = $request->all();
+
+        if(!isset($request_data['account_id']) && $request_data['installments'] == 0){
+            return response()->json(['error' => 'Se necesita una cuenta para registrar el pago'], 500);
+        }
+
+        $commission_percentage = isset($request_data['commission_percentage']) ? $request_data['commission_percentage'] : 0;
+        
+        $discount_percentage = isset($request_data['discount_percentage']) ? $request_data['discount_percentage'] : 0;
+        $currency = null;
+
+
+        $order = new Order();
+        $order->user_id = $request->input('user_id');
+        $order->status = 'paid';
+        $order->date_created = date('Y-m-d H:i:s');
+        $order->date_last_updated = date('Y-m-d H:i:s');
+        $order->date_closed = date('Y-m-d H:i:s');
+        $order->date_paid = date('Y-m-d H:i:s');
+        $order->payment_method_id = $request_data['payment_method_id'];
+        $order->shopping_cart_id = null;
+        $order->save();
+
+        $total = 0;
+
+       
+        foreach($request_data['items'] as $item){
+            $orderDetails = new OrderDetail();
+            $orderDetails->order_id = $order->id;
+            $orderDetails->course_id = $item['course_id'];
+            $orderDetails->price = $item['unit_price'];
+            $orderDetails->with_workshop = $item['with_workshop'];
+            if($item['with_workshop'] == 1){
+                if($request_data['payment_method_id'] == 1 || $request_data['payment_method_id'] == 2){ # 1 mp y 2 transf
+                    $orderDetails->price = $item['unit_price'] + env('WORKSHOP_PRICE_ARS');
+                }else{ # 3 stripe y 4 paypal
+                    $orderDetails->price = $item['unit_price'] + env('WORKSHOP_PRICE_USD');
+                }
+            }
+            $orderDetails->quantity = 1;
+            $orderDetails->save();
+
+            $total += $orderDetails->price;
+        }
+        if($discount_percentage > 0){
+            $order->discount_amount_ars = $total * $discount_percentage / 100;
+            $order->discount_amount_usd = $total * $discount_percentage / 100;
+            $total = $total - ($total * $discount_percentage / 100);
+            $order->discount_percentage = $discount_percentage;
+            $order->save();
+        }
+
+        if($request_data['payment_method_id'] == 1 || $request_data['payment_method_id'] == 2){ # 1 mp y 2 transf
+            $order->total_amount_usd = null;
+            $order->total_amount_ars = $total;         
+            $order->discount_amount_usd = null;
+            $currency = 2;
+
+        }else{ # 3 stripe y 4 paypal
+            $order->total_amount_usd = $total;
+            $order->total_amount_ars = null;
+            $order->discount_amount_ars = null;
+            $currency = 1;
+        }
+
+        if($request_data['installments'] > 0){
+            $installment = new Installments();
+            $installment->order_id = $order->id;
+            if(is_null($request_data['installments_date'])){
+                $start_date =date('Y-m-d');
+            }else{
+                $start_date = $request_data['installments_date'];
+            }
+            $installment->due_date = date('Y-m-d', strtotime($start_date . ' +' . $request_data['installments'] . ' months'));
+            $installment->status = 'pending';
+            $installment->amount = $request_data['installments'];
+            $installment->date_created = date('Y-m-d H:i:s');
+            $installment->date_last_updated = date('Y-m-d H:i:s');
+            $installment->save();
+
+            for($i = 1; $i <= $request_data['installments']; $i++){
+                $installmentDetail = new InstallmentDetail();
+                $installmentDetail->installment_id = $installment->id;
+                $installmentDetail->installment_number = $i;
+                $installmentDetail->due_date = date('Y-m-d', strtotime($start_date . ' +' . $i . ' months'));
+                if($i <= $request_data['installments_paid']){
+                    $installmentDetail->paid = 1;
+                    $installmentDetail->paid_date = date('Y-m-d H:i:s');
+                }
+                $installmentDetail->save();
+            }
+
+            $order->installments = $request_data['installments'];
+            $order->save(); 
+        }
+
+        $order->save();
+
+
+        #inscriptions
+        if($request_data['inscription']){
+            foreach($request_data['items'] as $item){
+                $inscriptions = new Inscriptions();
+                $inscriptions->user_id = $user->id;
+                $inscriptions->course_id = $item['course_id'];
+                $inscriptions->with_workshop = $item['with_workshop'];
+                $inscriptions->save();
+            }
+        }
+
+
+        if($request_data['installments'] == 0){
+            $account_id = $request->input('account_id');
+           
+            foreach($request_data['items'] as $item){
+                $movement = new Movements();
+                $movement->amount = $item['unit_price'];    
+                $movement->amount_neto = $item['unit_price'] - ($item['unit_price'] * $commission_percentage / 100);
+                $movement->currency = $currency;
+                #find course name
+                $course = Courses::find($item['course_id']);
+                $movement->description = 'Pago de orden #'.$order->id.' - Curso: '.$course->title;
+                $movement->course_id = $item['course_id'];
+                $movement->period = date('m-Y');
+                $movement->created_at = date('Y-m-d H:i:s');
+                $movement->account_id = $account_id;
+                $movement->save();
+            }
+        }
+
+
+        return response()->json(['data' => $order], 200);
+    }
+
+
+    public function getDiscountsForUser(Request $request,$user_id)
+    {
+        try{
+
+        #count inscriptions of user
+        $inscriptions = Inscriptions::where('user_id', $user_id)->count();
+
+        #count courses of user
+        $discounts = Discounts::where('courses_amount', '<=', $inscriptions)->orderBy('courses_amount', 'desc')->first();
+
+        if(!$discounts){
+            return  null;
+        }
+
+        return $discounts;
+
+        }catch(\Exception $e){
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram($e->getMessage());
+            return null;
+        }
     }
 }
