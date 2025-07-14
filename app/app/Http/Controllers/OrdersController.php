@@ -452,17 +452,17 @@ class OrdersController extends Controller
 
         $order->save();
 
-
-        #inscriptions
+        
         if($request_data['inscription']){
             foreach($request_data['items'] as $item){
                 $inscriptions = new Inscriptions();
-                $inscriptions->user_id = $user->id;
+                $inscriptions->user_id = $request_data['user_id'];
                 $inscriptions->course_id = $item['course_id'];
                 $inscriptions->with_workshop = $item['with_workshop'];
                 $inscriptions->save();
             }
         }
+     
 
 
         if($request_data['installments'] == 0){
