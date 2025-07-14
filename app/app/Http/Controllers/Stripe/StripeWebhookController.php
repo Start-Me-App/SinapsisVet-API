@@ -107,7 +107,7 @@ class StripeWebhookController extends Controller
             $movement->description = 'Pago de suscripción Stripe - Orden #'.$order->id.' - Curso: '.$course->title;
             $movement->course_id = $item->course_id;
             $movement->period = date('m-Y');
-            $movement->account_id = 1; // Stripe no tiene account_id específico
+            $movement->account_id = 2; // Stripe no tiene account_id específico
             $movement->save();
         }
         
