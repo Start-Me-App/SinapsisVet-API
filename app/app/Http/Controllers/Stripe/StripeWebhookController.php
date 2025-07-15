@@ -97,12 +97,39 @@ class StripeWebhookController extends Controller
             }
         }
 
-        // Crear movimientos para cada item del pedido
+        // Crear movimientos para cada item del pedido aplicando descuentos
+        // Calcular el total original para aplicar descuentos proporcionalmente
+        $totalOriginal = $orderDetail->sum('price');
+        $totalConDescuento = $totalOriginal;
+        
+        // Aplicar descuentos porcentuales
+        if($order->discount_percentage > 0){
+            $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage / 100);
+        }
+        if($order->discount_percentage_coupon > 0){
+            $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage_coupon / 100);
+        }
+        
+        // Aplicar descuentos por monto fijo según la moneda (Stripe usa USD)
+        if($order->discount_amount_usd > 0){
+            $totalConDescuento = $totalConDescuento - $order->discount_amount_usd;
+        }
+        
+        // Asegurar que el total no sea negativo
+        $totalConDescuento = max(0, $totalConDescuento);
+        
+        // Calcular factor de descuento para aplicar proporcionalmente a cada item
+        $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
+        
         foreach($orderDetail as $item){
             $course = Courses::find($item->course_id);
             $movement = new Movements();
-            $movement->amount = $item->price;
-            $movement->amount_neto = $item->price; // Para Stripe no aplicamos comisión aquí
+            
+            // Aplicar descuento proporcionalmente al precio del item
+            $precioConDescuento = $item->price * $factorDescuento;
+            
+            $movement->amount = $precioConDescuento;
+            $movement->amount_neto = $precioConDescuento; // Para Stripe no aplicamos comisión aquí
             $movement->currency = 1; // USD para Stripe
             $movement->description = 'Pago de suscripción Stripe - Orden #'.$order->id.' - Curso: '.$course->title;
             $movement->course_id = $item->course_id;
@@ -160,7 +187,46 @@ class StripeWebhookController extends Controller
                     }
                 }
 
-              
+                // Crear movimientos para cada item del pedido aplicando descuentos
+                // Calcular el total original para aplicar descuentos proporcionalmente
+                $totalOriginal = $orderDetail->sum('price');
+                $totalConDescuento = $totalOriginal;
+                
+                // Aplicar descuentos porcentuales
+                if($order->discount_percentage > 0){
+                    $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage / 100);
+                }
+                if($order->discount_percentage_coupon > 0){
+                    $totalConDescuento = $totalConDescuento - ($totalConDescuento * $order->discount_percentage_coupon / 100);
+                }
+                
+                // Aplicar descuentos por monto fijo según la moneda (Stripe usa USD)
+                if($order->discount_amount_usd > 0){
+                    $totalConDescuento = $totalConDescuento - $order->discount_amount_usd;
+                }
+                
+                // Asegurar que el total no sea negativo
+                $totalConDescuento = max(0, $totalConDescuento);
+                
+                // Calcular factor de descuento para aplicar proporcionalmente a cada item
+                $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
+                
+                foreach($orderDetail as $item){
+                    $course = Courses::find($item->course_id);
+                    $movement = new Movements();
+                    
+                    // Aplicar descuento proporcionalmente al precio del item
+                    $precioConDescuento = $item->price * $factorDescuento;
+                    
+                    $movement->amount = $precioConDescuento;
+                    $movement->amount_neto = $precioConDescuento; // Para Stripe no aplicamos comisión aquí
+                    $movement->currency = 1; // USD para Stripe
+                    $movement->description = 'Pago de suscripción Stripe - Orden #'.$order->id.' - Curso: '.$course->title;
+                    $movement->course_id = $item->course_id;
+                    $movement->period = date('m-Y');
+                    $movement->account_id = 2; // Stripe no tiene account_id específico
+                    $movement->save();
+                }
             }
         }
         
