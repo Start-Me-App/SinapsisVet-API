@@ -16,7 +16,8 @@ class Movements extends Model
         'currency',
         'period',
         'description',
-        'course_id'
+        'course_id',
+        'account_id'
     ];
 
     protected $casts = [
@@ -94,6 +95,14 @@ class Movements extends Model
     public function scopeByCourse($query, $courseId)
     {
         return $query->where('course_id', $courseId);
+    }
+
+    /**
+     * Scope para filtrar por cuenta
+     */
+    public function scopeByAccount($query, $accountId)
+    {
+        return $query->where('account_id', $accountId);
     }
 
     /**
