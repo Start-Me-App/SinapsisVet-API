@@ -193,12 +193,7 @@ class MovementsController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'amount' => 'required|numeric|min:0',
-                'currency' => 'required|integer|in:1,2',
-                'period' => 'required|string',
-                'description' => 'nullable|string|max:500',
-                'course_id' => 'nullable|integer|exists:courses,id',
-                'account_id' => 'nullable|integer|exists:accounts,id'
+                'amount_neto' => 'required|numeric|min:0'
             ]);
 
             if ($validator->fails()) {
@@ -208,12 +203,7 @@ class MovementsController extends Controller
                 ], 400);
             }
 
-            $movement->amount = $request->amount;
-            $movement->currency = $request->currency;
-            $movement->period = $request->period;
-            $movement->description = $request->description;
-            $movement->course_id = $request->course_id;
-            $movement->account_id = $request->account_id;
+            $movement->amount_neto = $request->amount_neto;
             $movement->save();
 
             return response()->json([
