@@ -27,7 +27,8 @@ class OrdersController extends Controller
     {   
         $params = $request->all();
       
-        $list = Order::with('user','orderDetails')->get();
+     
+        $list = Order::with('user','orderDetails')->orderBy('id', 'desc')->get();
       
         return response()->json(['data' => $list], 200);
     }
