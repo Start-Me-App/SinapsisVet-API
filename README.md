@@ -111,3 +111,9 @@ $ apt-get install freetds-common freetds-bin unixodbc php8.1-sybase
 For support, email team@libreopcion.com or join our Slack channel.
 
 #
+
+
+
+composer require "mercadopago/dx-php:3.0.8"
+
+composer require symfony/psr-http-message-bridge nyholm/psr7

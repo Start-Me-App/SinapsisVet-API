@@ -26,7 +26,15 @@ class Order extends Model
         'date_last_updated',
         'date_closed',
         'date_paid',
-        'shopping_cart_id'
+        'shopping_cart_id',
+        'discount_percentage',
+        'discount_percentage_coupon',
+        'discount_amount_usd',
+        'discount_amount_ars',
+        'total_amount_usd',
+        'total_amount_ars',
+        'payment_method_id',
+        'installments'
     ];
 
     /**

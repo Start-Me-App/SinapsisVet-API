@@ -15,7 +15,6 @@ services:
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
       - sinapsisvet-api-laravel-network
-      - sinapsisvet-shared-network
 
   # MySQL Service
   mysql:
@@ -51,7 +50,6 @@ services:
 
     networks:
       - sinapsisvet-api-laravel-network
-      - sinapsisvet-shared-network
 
   # Certbot Service
   certbot:
@@ -71,14 +69,11 @@ services:
                 while :; do sleep 12h & wait $${!}; certbot renew; done;'"
     networks:
       - sinapsisvet-api-laravel-network
-      - sinapsisvet-shared-network
 
 # Docker Networks
 networks:
   sinapsisvet-api-laravel-network:
     driver: bridge
-  sinapsisvet-shared-network:
-    external: true
 
 volumes:
   mysql_data:
