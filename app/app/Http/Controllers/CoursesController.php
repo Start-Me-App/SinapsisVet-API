@@ -423,7 +423,7 @@ class CoursesController extends Controller
         }
 
         $inscription = DB::table('inscriptions')->insert(
-            ['user_id' => $data['user_id'], 'course_id' => $course_id,'with_workshop' => $data['with_workshop']]
+            ['user_id' => $data['user_id'], 'course_id' => $course_id,'with_workshop' => $data['with_workshop'], 'scholarship' => true]
         );
 
         if($inscription){
@@ -450,13 +450,57 @@ class CoursesController extends Controller
         }
 
         #get students from inscriptions
-
         $students = DB::table('inscriptions')->where('course_id',$course_id)->get();
         $studentsList = [];
         foreach($students as $student){
             $studentData = User::where('id',$student->user_id)->first();
             $studentData->with_workshop = $student->with_workshop;
+            $studentData->scholarship = $student->scholarship;
             $studentsList[] = $studentData;
+        }
+
+        // Check if download parameter is set
+        $download = $request->input('download', 0);
+        
+        if($download == 1) {
+            // Generate CSV
+            $courseName = str_replace([' ', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '_', $course->title);
+            $filename = $courseName . '_estudiantes.csv';
+            
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0',
+                'Pragma' => 'public',
+            ];
+            
+            $callback = function() use ($studentsList) {
+                $file = fopen('php://output', 'w');
+                
+                // Add BOM for UTF-8
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+                
+                // CSV Headers
+                fputcsv($file, ['name', 'lastname', 'email', 'dob', 'telephone', 'with_workshop', 'scholarship'], ';');
+                
+                // CSV Data
+                foreach($studentsList as $student) {
+                    fputcsv($file, [
+                        $student->name,
+                        $student->lastname,
+                        $student->email,
+                        $student->dob,
+                        $student->telephone,
+                        $student->with_workshop ? 'Sí' : 'No',
+                        $student->scholarship ? 'Sí' : 'No'
+                    ], ';');
+                }
+                
+                fclose($file);
+            };
+            
+            return response()->stream($callback, 200, $headers);
         }
 
         return response()->json(['data' => $studentsList], 200);
