@@ -161,19 +161,23 @@ final class WebHook extends MercadoPago
               
               foreach($orderDetail as $item){
                 $course = Courses::find($item->course_id);
-                $movement = new Movements();
+            
+                #verificar si el movimiento ya existe a traves del description
+                $movement = Movements::where('description', 'Pago por mercado pago - Orden #'.$order->id.' - Curso: '.$course->title)->first();
+                if(!$movement){
+                    $movement = new Movements();
+                    // Aplicar descuento proporcionalmente al precio del item
+                    $precioConDescuento = $item->price * $factorDescuento;
                 
-                // Aplicar descuento proporcionalmente al precio del item
-                $precioConDescuento = $item->price * $factorDescuento;
-                
-                $movement->amount = $precioConDescuento;
-                $movement->amount_neto = $precioConDescuento; // Averiguar comision
-                $movement->currency = 2; // Pesos argentinos para mercado pago
-                $movement->description = 'Pago por mercado pago - Orden #'.$order->id.' - Curso: '.$course->title;
-                $movement->course_id = $item->course_id;
-                $movement->period = date('m-Y');
-                $movement->account_id = 1; // guardar en account_id de mercado pago
-                $movement->save();
+                    $movement->amount = $precioConDescuento;
+                    $movement->amount_neto = $precioConDescuento; // Averiguar comision
+                    $movement->currency = 2; // Pesos argentinos para mercado pago
+                    $movement->description = 'Pago por mercado pago - Orden #'.$order->id.' - Curso: '.$course->title;
+                    $movement->course_id = $item->course_id;
+                    $movement->period = date('m-Y');
+                    $movement->account_id = 1; // guardar en account_id de mercado pago
+                    $movement->save();
+                }
             }
         }
 
