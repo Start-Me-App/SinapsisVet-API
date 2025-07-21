@@ -127,8 +127,9 @@ class PDFController extends Controller
 
         $student = User::where('id',$user->id)->first();
         $course = Courses::where('id',$data['course_id'])->first();
+        $workshop_id = $data['workshop_id'];
        
-        $workshop = Workshops::where('course_id',$data['course_id'])->first();
+        $workshop = Workshops::where('id',$workshop_id)->where('course_id',$course->id)->first();
 
         if(!$workshop){
             throw new \Exception('No hay taller para este curso');
