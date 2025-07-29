@@ -657,6 +657,92 @@ class MovementsController extends Controller
                 ];
             }
 
+            // ============ CALCULAR GASTOS ============
+            // Calcular gastos totales por moneda usando amount_neto (movimientos negativos atados a cursos)
+            $totalGastosQuery = clone $baseQuery;
+            $totalGastos = $totalGastosQuery
+                ->selectRaw('
+                    currency,
+                    COUNT(*) as total_movements,
+                    COUNT(CASE WHEN amount_neto < 0 THEN 1 END) as outcome_movements,
+                    SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as total_gasto
+                ')
+                ->groupBy('currency')
+                ->get();
+
+            // Inicializar gastos con valores por defecto
+            $gasto_ars_total = 0;
+            $gasto_ars_total_movements = 0;
+            $gasto_ars_outcome_movements = 0;
+            $gasto_usd_total = 0;
+            $gasto_usd_total_movements = 0;
+            $gasto_usd_outcome_movements = 0;
+
+            // Asignar valores según moneda
+            foreach ($totalGastos as $gasto) {
+                if ($gasto->currency == 2) { // ARS
+                    $gasto_ars_total = $gasto->total_gasto;
+                    $gasto_ars_total_movements = $gasto->total_movements;
+                    $gasto_ars_outcome_movements = $gasto->outcome_movements;
+                } elseif ($gasto->currency == 1) { // USD
+                    $gasto_usd_total = $gasto->total_gasto;
+                    $gasto_usd_total_movements = $gasto->total_movements;
+                    $gasto_usd_outcome_movements = $gasto->outcome_movements;
+                }
+            }
+
+            // Calcular gastos por cuenta
+            $accountGastosQuery = clone $baseQuery;
+            $accountGastos = $accountGastosQuery
+                ->selectRaw('
+                    account_id,
+                    currency,
+                    COUNT(*) as total_movements,
+                    COUNT(CASE WHEN amount_neto < 0 THEN 1 END) as outcome_movements,
+                    SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as total_gasto
+                ')
+                ->whereNotNull('account_id')
+                ->groupBy(['account_id', 'currency'])
+                ->get();
+
+            // Agrupar por cuenta y calcular gastos
+            $byAccountsGastos = [];
+            $accountGroupsGastos = $accountGastos->groupBy('account_id');
+
+            foreach ($accountGroupsGastos as $accountId => $gastos) {
+                $accountName = Cuentas::where('id', $accountId)->first()->nombre ?? 'Sin cuenta';
+                
+                $account_gasto_ars_total = 0;
+                $account_gasto_usd_total = 0;
+                $account_gasto_ars_total_movements = 0;
+                $account_gasto_ars_outcome_movements = 0;
+                $account_gasto_usd_total_movements = 0;
+                $account_gasto_usd_outcome_movements = 0;
+
+                foreach ($gastos as $gasto) {
+                    if ($gasto->currency == 2) { // ARS
+                        $account_gasto_ars_total = $gasto->total_gasto;
+                        $account_gasto_ars_total_movements = $gasto->total_movements;
+                        $account_gasto_ars_outcome_movements = $gasto->outcome_movements;
+                    } elseif ($gasto->currency == 1) { // USD
+                        $account_gasto_usd_total = $gasto->total_gasto;
+                        $account_gasto_usd_total_movements = $gasto->total_movements;
+                        $account_gasto_usd_outcome_movements = $gasto->outcome_movements;
+                    }
+                }
+
+                $byAccountsGastos[] = [
+                    'account_id' => (int) $accountId,
+                    'account_name' => $accountName,
+                    'gasto_ars_total' => (float) $account_gasto_ars_total,
+                    'gasto_ars_total_movements' => (int) $account_gasto_ars_total_movements,
+                    'gasto_ars_outcome_movements' => (int) $account_gasto_ars_outcome_movements,
+                    'gasto_usd_total' => (float) $account_gasto_usd_total,
+                    'gasto_usd_total_movements' => (int) $account_gasto_usd_total_movements,
+                    'gasto_usd_outcome_movements' => (int) $account_gasto_usd_outcome_movements
+                ];
+            }
+
             return response()->json([
                 'bruto' => [
                     'balance_ars_income' => (float) $balance_ars_income,
@@ -696,6 +782,15 @@ class MovementsController extends Controller
                     'ganancia_usd_total_movements' => (int) $ganancia_usd_total_movements,
                     'ganancia_usd_income_movements' => (int) $ganancia_usd_income_movements,
                     'by_accounts' => $byAccountsGanancias
+                ],
+                'gastos' => [
+                    'gasto_ars_total' => (float) $gasto_ars_total,
+                    'gasto_ars_total_movements' => (int) $gasto_ars_total_movements,
+                    'gasto_ars_outcome_movements' => (int) $gasto_ars_outcome_movements,
+                    'gasto_usd_total' => (float) $gasto_usd_total,
+                    'gasto_usd_total_movements' => (int) $gasto_usd_total_movements,
+                    'gasto_usd_outcome_movements' => (int) $gasto_usd_outcome_movements,
+                    'by_accounts' => $byAccountsGastos
                 ]
             ], 200);
 
