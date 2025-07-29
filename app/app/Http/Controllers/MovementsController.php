@@ -780,8 +780,7 @@ class MovementsController extends Controller
                     'ganancia_ars_income_movements' => (int) $ganancia_ars_income_movements,
                     'ganancia_usd_total' => (float) $ganancia_usd_total,
                     'ganancia_usd_total_movements' => (int) $ganancia_usd_total_movements,
-                    'ganancia_usd_income_movements' => (int) $ganancia_usd_income_movements,
-                    'by_accounts' => $byAccountsGanancias
+                    'ganancia_usd_income_movements' => (int) $ganancia_usd_income_movements
                 ],
                 'gastos' => [
                     'gasto_ars_total' => (float) $gasto_ars_total,
@@ -789,8 +788,7 @@ class MovementsController extends Controller
                     'gasto_ars_outcome_movements' => (int) $gasto_ars_outcome_movements,
                     'gasto_usd_total' => (float) $gasto_usd_total,
                     'gasto_usd_total_movements' => (int) $gasto_usd_total_movements,
-                    'gasto_usd_outcome_movements' => (int) $gasto_usd_outcome_movements,
-                    'by_accounts' => $byAccountsGastos
+                    'gasto_usd_outcome_movements' => (int) $gasto_usd_outcome_movements
                 ]
             ], 200);
 
