@@ -557,10 +557,10 @@ class MovementsController extends Controller
                 ];
             }
 
-            // ============ CALCULAR COMISIONES ============
-            // Calcular comisiones totales por moneda usando amount_neto y courses.comission
-            $totalComissionQuery = clone $baseQuery;
-            $totalComissions = $totalComissionQuery
+            // ============ CALCULAR GANANCIAS ============
+            // Calcular ganancias totales por moneda usando amount_neto y courses.comission
+            $totalGananciasQuery = clone $baseQuery;
+            $totalGanancias = $totalGananciasQuery
                 ->join('courses', 'movements.course_id', '=', 'courses.id')
                 ->selectRaw('
                     movements.currency,
@@ -570,37 +570,37 @@ class MovementsController extends Controller
                         WHEN movements.amount_neto > 0 
                         THEN movements.amount_neto * (courses.comission / 100) 
                         ELSE 0 
-                    END) as total_comission
+                    END) as total_ganancia
                 ')
                 ->whereNotNull('movements.course_id')
                 ->whereNotNull('courses.comission')
                 ->groupBy('movements.currency')
                 ->get();
 
-            // Inicializar comisiones con valores por defecto
-            $comission_ars_total = 0;
-            $comission_ars_total_movements = 0;
-            $comission_ars_income_movements = 0;
-            $comission_usd_total = 0;
-            $comission_usd_total_movements = 0;
-            $comission_usd_income_movements = 0;
+            // Inicializar ganancias con valores por defecto
+            $ganancia_ars_total = 0;
+            $ganancia_ars_total_movements = 0;
+            $ganancia_ars_income_movements = 0;
+            $ganancia_usd_total = 0;
+            $ganancia_usd_total_movements = 0;
+            $ganancia_usd_income_movements = 0;
 
             // Asignar valores según moneda
-            foreach ($totalComissions as $comission) {
-                if ($comission->currency == 2) { // ARS
-                    $comission_ars_total = $comission->total_comission;
-                    $comission_ars_total_movements = $comission->total_movements;
-                    $comission_ars_income_movements = $comission->income_movements;
-                } elseif ($comission->currency == 1) { // USD
-                    $comission_usd_total = $comission->total_comission;
-                    $comission_usd_total_movements = $comission->total_movements;
-                    $comission_usd_income_movements = $comission->income_movements;
+            foreach ($totalGanancias as $ganancia) {
+                if ($ganancia->currency == 2) { // ARS
+                    $ganancia_ars_total = $ganancia->total_ganancia;
+                    $ganancia_ars_total_movements = $ganancia->total_movements;
+                    $ganancia_ars_income_movements = $ganancia->income_movements;
+                } elseif ($ganancia->currency == 1) { // USD
+                    $ganancia_usd_total = $ganancia->total_ganancia;
+                    $ganancia_usd_total_movements = $ganancia->total_movements;
+                    $ganancia_usd_income_movements = $ganancia->income_movements;
                 }
             }
 
-            // Calcular comisiones por cuenta
-            $accountComissionQuery = clone $baseQuery;
-            $accountComissions = $accountComissionQuery
+            // Calcular ganancias por cuenta
+            $accountGananciasQuery = clone $baseQuery;
+            $accountGanancias = $accountGananciasQuery
                 ->join('courses', 'movements.course_id', '=', 'courses.id')
                 ->selectRaw('
                     movements.account_id,
@@ -611,7 +611,7 @@ class MovementsController extends Controller
                         WHEN movements.amount_neto > 0 
                         THEN movements.amount_neto * (courses.comission / 100) 
                         ELSE 0 
-                    END) as total_comission
+                    END) as total_ganancia
                 ')
                 ->whereNotNull('movements.account_id')
                 ->whereNotNull('movements.course_id')
@@ -619,41 +619,41 @@ class MovementsController extends Controller
                 ->groupBy(['movements.account_id', 'movements.currency'])
                 ->get();
 
-            // Agrupar por cuenta y calcular comisiones
-            $byAccountsComission = [];
-            $accountGroupsComission = $accountComissions->groupBy('account_id');
+            // Agrupar por cuenta y calcular ganancias
+            $byAccountsGanancias = [];
+            $accountGroupsGanancias = $accountGanancias->groupBy('account_id');
 
-            foreach ($accountGroupsComission as $accountId => $comissions) {
+            foreach ($accountGroupsGanancias as $accountId => $ganancias) {
                 $accountName = Cuentas::where('id', $accountId)->first()->nombre ?? 'Sin cuenta';
                 
-                $account_comission_ars_total = 0;
-                $account_comission_usd_total = 0;
-                $account_comission_ars_total_movements = 0;
-                $account_comission_ars_income_movements = 0;
-                $account_comission_usd_total_movements = 0;
-                $account_comission_usd_income_movements = 0;
+                $account_ganancia_ars_total = 0;
+                $account_ganancia_usd_total = 0;
+                $account_ganancia_ars_total_movements = 0;
+                $account_ganancia_ars_income_movements = 0;
+                $account_ganancia_usd_total_movements = 0;
+                $account_ganancia_usd_income_movements = 0;
 
-                foreach ($comissions as $comission) {
-                    if ($comission->currency == 2) { // ARS
-                        $account_comission_ars_total = $comission->total_comission;
-                        $account_comission_ars_total_movements = $comission->total_movements;
-                        $account_comission_ars_income_movements = $comission->income_movements;
-                    } elseif ($comission->currency == 1) { // USD
-                        $account_comission_usd_total = $comission->total_comission;
-                        $account_comission_usd_total_movements = $comission->total_movements;
-                        $account_comission_usd_income_movements = $comission->income_movements;
+                foreach ($ganancias as $ganancia) {
+                    if ($ganancia->currency == 2) { // ARS
+                        $account_ganancia_ars_total = $ganancia->total_ganancia;
+                        $account_ganancia_ars_total_movements = $ganancia->total_movements;
+                        $account_ganancia_ars_income_movements = $ganancia->income_movements;
+                    } elseif ($ganancia->currency == 1) { // USD
+                        $account_ganancia_usd_total = $ganancia->total_ganancia;
+                        $account_ganancia_usd_total_movements = $ganancia->total_movements;
+                        $account_ganancia_usd_income_movements = $ganancia->income_movements;
                     }
                 }
 
-                $byAccountsComission[] = [
+                $byAccountsGanancias[] = [
                     'account_id' => (int) $accountId,
                     'account_name' => $accountName,
-                    'comission_ars_total' => (float) $account_comission_ars_total,
-                    'comission_ars_total_movements' => (int) $account_comission_ars_total_movements,
-                    'comission_ars_income_movements' => (int) $account_comission_ars_income_movements,
-                    'comission_usd_total' => (float) $account_comission_usd_total,
-                    'comission_usd_total_movements' => (int) $account_comission_usd_total_movements,
-                    'comission_usd_income_movements' => (int) $account_comission_usd_income_movements
+                    'ganancia_ars_total' => (float) $account_ganancia_ars_total,
+                    'ganancia_ars_total_movements' => (int) $account_ganancia_ars_total_movements,
+                    'ganancia_ars_income_movements' => (int) $account_ganancia_ars_income_movements,
+                    'ganancia_usd_total' => (float) $account_ganancia_usd_total,
+                    'ganancia_usd_total_movements' => (int) $account_ganancia_usd_total_movements,
+                    'ganancia_usd_income_movements' => (int) $account_ganancia_usd_income_movements
                 ];
             }
 
@@ -688,14 +688,14 @@ class MovementsController extends Controller
                     'balance_usd_outcome_movements' => (int) $balance_neto_usd_outcome_movements,
                     'by_accounts' => $byAccountsNeto
                 ],
-                'comisiones' => [
-                    'comission_ars_total' => (float) $comission_ars_total,
-                    'comission_ars_total_movements' => (int) $comission_ars_total_movements,
-                    'comission_ars_income_movements' => (int) $comission_ars_income_movements,
-                    'comission_usd_total' => (float) $comission_usd_total,
-                    'comission_usd_total_movements' => (int) $comission_usd_total_movements,
-                    'comission_usd_income_movements' => (int) $comission_usd_income_movements,
-                    'by_accounts' => $byAccountsComission
+                'ganancias' => [
+                    'ganancia_ars_total' => (float) $ganancia_ars_total,
+                    'ganancia_ars_total_movements' => (int) $ganancia_ars_total_movements,
+                    'ganancia_ars_income_movements' => (int) $ganancia_ars_income_movements,
+                    'ganancia_usd_total' => (float) $ganancia_usd_total,
+                    'ganancia_usd_total_movements' => (int) $ganancia_usd_total_movements,
+                    'ganancia_usd_income_movements' => (int) $ganancia_usd_income_movements,
+                    'by_accounts' => $byAccountsGanancias
                 ]
             ], 200);
 
