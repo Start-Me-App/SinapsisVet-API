@@ -40,7 +40,8 @@ class CoursesController extends Controller
             'objective' => 'required',
             'presentation' => 'required',
             'professors' => 'required',
-            'academic_duration' => 'required'
+            'academic_duration' => 'required',
+            'comission' => 'nullable|numeric'
         ]);
 
         if ($validator->fails()) {
@@ -116,7 +117,7 @@ class CoursesController extends Controller
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
         $course->academic_duration = $data['academic_duration'];
-
+        $course->comission = $data['comission'] ?? 100;
 
 
         if($course->save()){
@@ -181,7 +182,8 @@ class CoursesController extends Controller
             'objective' => 'required',
             'presentation' => 'required',
             'professors' => 'required',
-            'academic_duration' => 'required'
+            'academic_duration' => 'required',
+            'comission' => 'nullable|numeric'
         ]);
 
         if ($validator->fails()) {
@@ -243,6 +245,7 @@ class CoursesController extends Controller
         $course->destined_to = $destined_to;
         $course->certifications = $certifications;
         $course->academic_duration = $data['academic_duration'];
+        $course->comission = $data['comission'] ?? 100;
 
 
         #check if course is active

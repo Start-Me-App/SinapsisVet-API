@@ -38,8 +38,8 @@ class Courses extends Model
         'subtitle',
         'destined_to',
         'certifications',
-        'academic_duration'
-
+        'academic_duration',
+        'comission'
     ];
 
 

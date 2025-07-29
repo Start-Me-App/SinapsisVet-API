@@ -43,4 +43,10 @@ return new class extends Migration
     {
         Schema::dropIfExists('order');
     }
+
+    public function shouldRun(): bool
+    {
+        // Return false to skip this migration
+        return false;
+    }
 };

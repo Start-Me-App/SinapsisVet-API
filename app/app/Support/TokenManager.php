@@ -102,6 +102,10 @@ class TokenManager
     public static function getUserFromToken($token)
     {
         try {
+            if(empty($token) || is_null($token)){
+                throw new \Exception('No autenticado', 401);
+            }
+
             $payload = JWT::decode($token, new Key(md5($_ENV["JWT_SIGNATURE_KEY"]), 'HS256'));
             return $payload->user;
         } catch (BeforeValidException|ExpiredException $e) {
