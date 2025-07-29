@@ -233,6 +233,12 @@ class OrdersController extends Controller
             return response()->json(['error' => 'Se necesita una cuenta para registrar el pago'], 500);
         }
 
+        if($account_id == 2 || $account_id == 7){
+            $currency = 1; 
+        }else{
+            $currency = 2;
+        }
+
         $commission_percentage = $request->input('commission_percentage');
 
         $installmentDetail = InstallmentDetail::find($installment_id);
@@ -283,7 +289,7 @@ class OrdersController extends Controller
                     $movement = new Movements();
                     $movement->amount = $montoCuota;
                     $movement->amount_neto = $montoCuota - ($montoCuota * $commission_percentage / 100);
-                    $movement->currency = 2;
+                    $movement->currency = $currency;
                     $movement->description = 'Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
                     $movement->course_id = $item->course_id;
                     $movement->period = date('m-Y');
