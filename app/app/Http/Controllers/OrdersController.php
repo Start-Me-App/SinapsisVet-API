@@ -89,7 +89,7 @@ class OrdersController extends Controller
                         $installmentDetail = new InstallmentDetail();
                         $installmentDetail->installment_id = $installment->id;
                         $installmentDetail->installment_number = $i;
-                        $installmentDetail->due_date = date('Y-m-d', strtotime('+' . $i . ' months'));
+                        $installmentDetail->due_date = date('Y-m-d', strtotime('+' . $i-1 . ' months'));
                         $installmentDetail->save();
                     }
 
@@ -445,7 +445,7 @@ class OrdersController extends Controller
                 $installmentDetail = new InstallmentDetail();
                 $installmentDetail->installment_id = $installment->id;
                 $installmentDetail->installment_number = $i;
-                $installmentDetail->due_date = date('Y-m-d', strtotime($start_date . ' +' . $i . ' months'));
+                $installmentDetail->due_date = date('Y-m-d', strtotime($start_date . ' +' . $i-1 . ' months'));
                 if($i <= $request_data['installments_paid']){
                     $installmentDetail->paid = 1;
                     $installmentDetail->paid_date = date('Y-m-d H:i:s');
