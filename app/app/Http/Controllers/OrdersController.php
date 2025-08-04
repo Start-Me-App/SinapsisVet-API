@@ -220,7 +220,7 @@ class OrdersController extends Controller
 
     public function getInstallments($order_id)
     {
-        $installments = Installments::with('installmentDetails','order.orderDetails.course')->where('order_id', $order_id)->get();
+        $installments = Installments::with('installmentDetails','installmentMovements','order.orderDetails.course')->where('order_id', $order_id)->get();
         return response()->json(['data' => $installments], 200);
     }
 

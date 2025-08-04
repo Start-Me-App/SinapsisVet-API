@@ -26,4 +26,9 @@ class Installments extends Model
         return $this->hasMany(InstallmentDetail::class, 'installment_id', 'id');
     }
 
+    public function installmentMovements()
+    {
+        return $this->hasOne(Movements::class, 'id', 'movement_id');
+    }
+
 }
