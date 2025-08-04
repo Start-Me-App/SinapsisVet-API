@@ -13,7 +13,7 @@ class InstallmentDetail extends Model
     
     protected $table = 'installment_detail';
 
-    protected $fillable = ['installment_id','installment_number','due_date','paid_date','url_payment','paid'];
+    protected $fillable = ['installment_id','installment_number','due_date','paid_date','url_payment','paid','movement_id'];
 
  
     public function installment()
@@ -21,6 +21,10 @@ class InstallmentDetail extends Model
         return $this->hasOne(Installments::class, 'id', 'installment_id');
     }
 
+    public function installmentMovement()
+    {
+        return $this->hasOne(Movements::class, 'id', 'movement_id');
+    }
     
 
 }

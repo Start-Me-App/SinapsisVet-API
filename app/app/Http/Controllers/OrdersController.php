@@ -220,7 +220,7 @@ class OrdersController extends Controller
 
     public function getInstallments($order_id)
     {
-        $installments = Installments::with('installmentDetails','installmentMovements','order.orderDetails.course')->where('order_id', $order_id)->get();
+        $installments = Installments::with('installmentDetails.installmentMovement','order.orderDetails.course')->where('order_id', $order_id)->get();
         return response()->json(['data' => $installments], 200);
     }
 
@@ -295,10 +295,14 @@ class OrdersController extends Controller
                     $movement->period = date('m-Y');
                     $movement->account_id = $request->input('account_id');
                     $movement->save();
+                    $installmentDetail->movement_id = $movement->id;
+                    $installmentDetail->save();
                 }
             }
         }else{
             $installmentDetail->paid_date = null;
+            $installmentDetail->movement_id = null;
+            $installmentDetail->save();
         }
         $installmentDetail->paid = $request->input('paid');
         $installmentDetail->save();

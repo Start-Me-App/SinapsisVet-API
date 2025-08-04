@@ -28,7 +28,9 @@ class Installments extends Model
 
     public function installmentMovements()
     {
-        return $this->hasOne(Movements::class, 'id', 'movement_id');
+        return $this->hasManyThrough(Movements::class, InstallmentDetail::class, 'installment_id', 'id', 'id', 'movement_id');
     }
+
+ 
 
 }
