@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
         
         // Enviar reporte de ganancias diario a las 12:00
         $schedule->command('ganancias:enviar-reporte-diario')
-                 ->dailyAt('12:00')
+                 ->dailyAt('22:00')
                  ->timezone('America/Argentina/Buenos_Aires');
     }
 
