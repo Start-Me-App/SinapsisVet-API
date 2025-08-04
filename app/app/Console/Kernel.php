@@ -13,6 +13,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+        
+        // Enviar reporte de ganancias diario a las 12:00
+        $schedule->command('ganancias:enviar-reporte-diario')
+                 ->dailyAt('12:00')
+                 ->timezone('America/Argentina/Buenos_Aires');
     }
 
     /**

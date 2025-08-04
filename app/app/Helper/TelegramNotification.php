@@ -53,4 +53,35 @@ class TelegramNotification
         
     }
 
+    /**
+     * Envía un reporte de ganancias por Telegram
+     */
+    public function enviarReporteGanancias($mensaje)
+    {
+        try {
+            // Enviar a los diferentes chats configurados
+            $this->telegram->sendMessage([
+                'chat_id' => env('TELEGRAM_CHAT_ID_TETU'),
+                'text' => $mensaje,
+                'parse_mode' => 'Markdown'
+            ]);
+
+            $this->telegram->sendMessage([
+                'chat_id' => env('TELEGRAM_CHAT_ID_FETA'),
+                'text' => $mensaje,
+                'parse_mode' => 'Markdown'
+            ]);
+
+            $this->telegram->sendMessage([
+                'chat_id' => env('TELEGRAM_CHAT_ID_CIRO'),
+                'text' => $mensaje,
+                'parse_mode' => 'Markdown'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error enviando reporte de ganancias por Telegram: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
 }
