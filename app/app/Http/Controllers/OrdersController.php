@@ -290,7 +290,7 @@ class OrdersController extends Controller
                     $movement->amount = $montoCuota;
                     $movement->amount_neto = $montoCuota - ($montoCuota * $commission_percentage / 100);
                     $movement->currency = $currency;
-                    $movement->description = 'Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
+                    $movement->description = 'Orden #'.$order->id.' - Pago de cuota #'.$installmentDetail->id.' - Curso: '.$course->title;
                     $movement->course_id = $item->course_id;
                     $movement->period = date('m-Y');
                     $movement->account_id = $request->input('account_id');
