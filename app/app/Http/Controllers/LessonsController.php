@@ -180,7 +180,6 @@ class LessonsController extends Controller
                             $array_ids[] = $material->id;
                         }
                    }catch(\Exception $e){
-                        $lesson->delete();
                         return response()->json(['error' => 'Error al subir los materiales', 'data' => $e->getMessage()], 500);
                    }
                 }
