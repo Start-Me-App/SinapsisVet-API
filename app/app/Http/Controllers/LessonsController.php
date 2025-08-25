@@ -80,18 +80,31 @@ class LessonsController extends Controller
                 $materials = $request->file('materials');
                
                 try{
-                    if ($materials && is_array($materials)) {
+                    if ($materials) {
+                        // Validar que materials sea un array
+                        if (!is_array($materials)) {
+                            $materials = [$materials];
+                        }
+                        
                         foreach ($materials as $file) {
+                            // Validar que el archivo existe y es válido
+                            if (!$file || !$file->isValid()) {
+                                continue; // Saltar archivos inválidos
+                            }
+                            
+                            // Validar que el archivo no esté vacío
+                            if ($file->getSize() === 0) {
+                                continue; // Saltar archivos vacíos
+                            }
                     
-                        $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
+                            $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
 
-                        $material = new Materials();
-                        $material->lesson_id = $lesson->id;
-                        $material->file_path = $path;
-                        $material->name = $file->getClientOriginalName();
-                        $material->active = 1;
-                        $material->save();
-
+                            $material = new Materials();
+                            $material->lesson_id = $lesson->id;
+                            $material->file_path = $path;
+                            $material->name = $file->getClientOriginalName();
+                            $material->active = 1;
+                            $material->save();
                         }
                     }
                 }catch(\Exception $e){
@@ -167,9 +180,25 @@ class LessonsController extends Controller
                 $materials = $request->input('materials');
                 $new_materials = $request->file('new_materials');
                 $array_ids = [];
+                
                 if ($new_materials) {
                    try{
+                        // Validar que new_materials sea un array
+                        if (!is_array($new_materials)) {
+                            $new_materials = [$new_materials];
+                        }
+                        
                         foreach ($new_materials as $file) {
+                            // Validar que el archivo existe y es válido
+                            if (!$file || !$file->isValid()) {
+                                continue; // Saltar archivos inválidos
+                            }
+                            
+                            // Validar que el archivo no esté vacío
+                            if ($file->getSize() === 0) {
+                                continue; // Saltar archivos vacíos
+                            }
+                            
                             $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
                             $material = new Materials();
                             $material->lesson_id = $lesson->id;

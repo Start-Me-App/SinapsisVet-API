@@ -31,18 +31,38 @@ class UploadServer
     /**
      * Sube un archivo al almacenamiento público.
      *
-     * @param UploadedFile $image
+     * @param UploadedFile $file
      * @param string $folder
-     * @return string URL de la imagen subida
+     * @return string URL del archivo subido
+     * @throws \Exception
      */
     public static function uploadFile(UploadedFile $file, string $folder = 'images'): string
     {
+        // Validar que el archivo existe y es válido
+        if (!$file || !$file->isValid()) {
+            throw new \Exception('El archivo no es válido o no se pudo leer');
+        }
+        
+        // Validar que el archivo no esté vacío
+        if ($file->getSize() === 0) {
+            throw new \Exception('El archivo está vacío');
+        }
+        
+        // Crear el directorio si no existe
+        $disk = Storage::disk('public');
+        if (!$disk->exists($folder)) {
+            $disk->makeDirectory($folder);
+        }
+        
         // Almacena el archivo en el disco 'public' dentro de la carpeta especificada
         $path = $file->store($folder, 'public');
+        
+        if (!$path) {
+            throw new \Exception('No se pudo almacenar el archivo');
+        }
 
         // Retorna la URL pública del archivo subido
         return Storage::url($path);
-
     }
 
 
