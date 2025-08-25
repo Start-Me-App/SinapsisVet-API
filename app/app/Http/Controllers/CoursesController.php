@@ -365,7 +365,7 @@ class CoursesController extends Controller
     {   
 
 
-        $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
+        $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->orderBy('date','asc')->get();
 
         return response()->json(['data' => $list], 200);
     }
@@ -640,7 +640,7 @@ class CoursesController extends Controller
                 $list->inscribed_workshop = 0;
             }else{
                 
-                $lessons = Lessons::where('course_id',$course_id)->get();
+                $lessons = Lessons::where('course_id',$course_id)->orderBy('date','asc')->get();
                 $lessons_ids = [];
                 foreach($lessons as $lesson){
                     $lessons_ids[] = $lesson->id;
@@ -690,7 +690,7 @@ class CoursesController extends Controller
         $accessToken = TokenManager::getTokenFromRequest();
 
         if(is_null($accessToken)){
-            $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
+            $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->orderBy('date','asc')->get();
             foreach($list as $lesson){
                 $lesson->video_url = null;
                 $lesson->zoom_meeting_id = null;
@@ -704,7 +704,7 @@ class CoursesController extends Controller
             $user = TokenManager::getUserFromToken($accessToken);
             $inscription = DB::table('inscriptions')->where('user_id',$user->id)->where('course_id',$course_id)->first();
             if(!$inscription){
-                $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->get();
+                $list = Lessons::with(['materials','professor'])->where('course_id',$course_id)->orderBy('date','asc')->get();
                 foreach($list as $lesson){
                     $lesson->video_url = null;
                     $lesson->zoom_meeting_id = null;
@@ -724,6 +724,7 @@ class CoursesController extends Controller
             })
             ->select('lessons.*', DB::raw('COALESCE(view_lesson.id, 0) as viewed'))
             ->where('course_id', $course_id)
+            ->orderBy('lessons.date','asc')
             ->get();
 
             foreach($list as $lesson){
