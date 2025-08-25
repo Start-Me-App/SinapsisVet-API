@@ -190,14 +190,14 @@ class LessonsController extends Controller
                         
                         foreach ($new_materials as $file) {
                             // Validar que el archivo existe y es válido
-                            if (!$file || !$file->isValid()) {
+                        /*     if (!$file || !$file->isValid()) {
                                 continue; // Saltar archivos inválidos
                             }
                             
                             // Validar que el archivo no esté vacío
                             if ($file->getSize() === 0) {
                                 continue; // Saltar archivos vacíos
-                            }
+                            } */
                             
                             $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
                             $material = new Materials();
