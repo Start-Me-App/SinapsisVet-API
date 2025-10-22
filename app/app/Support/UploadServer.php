@@ -48,6 +48,14 @@ class UploadServer
             throw new \Exception('El archivo está vacío');
         }
         
+        // Validar tamaño del archivo
+        $maxFileSize = self::getMaxFileSize();
+        if ($file->getSize() > $maxFileSize) {
+            $fileSizeMB = round($file->getSize() / 1024 / 1024, 2);
+            $maxSizeMB = round($maxFileSize / 1024 / 1024, 2);
+            throw new \Exception("El archivo '{$file->getClientOriginalName()}' excede el límite de tamaño permitido ({$fileSizeMB}MB > {$maxSizeMB}MB)");
+        }
+        
         // Crear el directorio si no existe
         $disk = Storage::disk('public');
         if (!$disk->exists($folder)) {
@@ -63,6 +71,42 @@ class UploadServer
 
         // Retorna la URL pública del archivo subido
         return Storage::url($path);
+    }
+    
+    /**
+     * Obtiene el límite máximo de tamaño de archivo
+     */
+    private static function getMaxFileSize(): int
+    {
+        // Obtener el límite de upload_max_filesize
+        $uploadMaxFilesize = self::parseSize(ini_get('upload_max_filesize'));
+        
+        // Obtener el límite de post_max_size
+        $postMaxSize = self::parseSize(ini_get('post_max_size'));
+        
+        // Retornar el menor de los dos
+        return min($uploadMaxFilesize, $postMaxSize);
+    }
+    
+    /**
+     * Convierte un string de tamaño (ej: "100M") a bytes
+     */
+    private static function parseSize(string $size): int
+    {
+        $size = strtolower(trim($size));
+        $last = strtolower($size[strlen($size) - 1]);
+        $size = (int) $size;
+        
+        switch ($last) {
+            case 'g':
+                $size *= 1024;
+            case 'm':
+                $size *= 1024;
+            case 'k':
+                $size *= 1024;
+        }
+        
+        return $size;
     }
 
 

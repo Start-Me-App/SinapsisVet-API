@@ -184,6 +184,7 @@ use App\Http\Controllers\AccountsController;
         #create route group for orders
         Route::group(['prefix' => 'orders'], function () {
             Route::get('/all', [OrdersController::class,'getAll'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/export', [OrdersController::class,'exportToExcel'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::get('/{order_id}', [OrdersController::class,'getOrderDetails'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::post('/{order_id}/accept', [OrdersController::class,'acceptOrder'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::post('/{order_id}/reject', [OrdersController::class,'rejectOrder'])->middleware(ControlAccessMiddleware::class.':admin');
@@ -192,6 +193,11 @@ use App\Http\Controllers\AccountsController;
             Route::get('/installments/all', [OrdersController::class,'getAllInstallments'])->middleware(ControlAccessMiddleware::class.':admin');
       
             Route::post('/create', [OrdersController::class,'createOrder'])->middleware(ControlAccessMiddleware::class.':admin');
+        });
+
+        #create route group for installments
+        Route::group(['prefix' => 'installments'], function () {
+            Route::get('/export', [OrdersController::class,'exportInstallmentsToExcel'])->middleware(ControlAccessMiddleware::class.':admin');
         }); 
 
 

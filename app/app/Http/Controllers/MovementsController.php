@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Movements;
+use App\Models\Order;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Cuentas;
 
@@ -39,9 +40,22 @@ class MovementsController extends Controller
             }
 
             // Incluir relaciones para el CSV
+            #Agregar relacion con usuario
             $movements = $query->with(['course', 'account'])
                               ->orderBy('created_at', 'desc')
                               ->get();
+
+            foreach($movements as $movement){
+               #obtener el numero de orden, el cual se obtiene de la descripcion del movimiento 
+               #Si tiene Orden #, entonces se obtiene el numero de orden, y quito todo lo q esta despues de los primeros numeros
+               if(strpos($movement->description, 'Orden #') !== false){
+                $order_number = explode('Orden #', $movement->description)[1];
+                $order_number = explode('-', $order_number)[0];
+                
+               }
+               $order = Order::where('id', (int)$order_number)->with('user')->first();
+               $movement->email = $order->user->email;
+            }
 
             // Si se solicita descarga como CSV
             if ($request->has('download') && $request->download == 1) {
@@ -88,7 +102,10 @@ class MovementsController extends Controller
                 'Período',
                 'Descripción',
                 'Curso',
-                'Cuenta'
+                'Cuenta',
+                'Comisión',
+                'Ganancia Final',
+                'Usuario'
             ], ';');
 
             // Datos
@@ -101,7 +118,10 @@ class MovementsController extends Controller
                     $movement->period,
                     $movement->description ?? '',
                     $movement->course->title ?? '',
-                    $movement->account->nombre ?? ''
+                    $movement->account->nombre ?? '',
+                    $movement->course->comission ?? '',
+                     $movement->amount_neto  * ($movement->course->comission / 100 )?? '',
+                     $movement->email ?? ''
                 ], ';');
             }
 
@@ -661,13 +681,20 @@ class MovementsController extends Controller
             // Calcular gastos totales por moneda usando amount_neto (movimientos negativos atados a cursos)
             $totalGastosQuery = clone $baseQuery;
             $totalGastos = $totalGastosQuery
+                ->leftJoin('courses', 'movements.course_id', '=', 'courses.id')
                 ->selectRaw('
-                    currency,
+                    movements.currency,
                     COUNT(*) as total_movements,
-                    COUNT(CASE WHEN amount_neto < 0 THEN 1 END) as outcome_movements,
-                    SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as total_gasto
+                    COUNT(CASE WHEN movements.amount_neto < 0 THEN 1 END) as outcome_movements,
+                    SUM(CASE 
+                        WHEN movements.amount_neto < 0 AND movements.course_id IS NOT NULL AND courses.comission IS NOT NULL
+                        THEN ABS(movements.amount_neto) * (courses.comission / 100)
+                        WHEN movements.amount_neto < 0
+                        THEN ABS(movements.amount_neto)
+                        ELSE 0 
+                    END) as total_gasto
                 ')
-                ->groupBy('currency')
+                ->groupBy('movements.currency')
                 ->get();
 
             // Inicializar gastos con valores por defecto
@@ -694,15 +721,22 @@ class MovementsController extends Controller
             // Calcular gastos por cuenta
             $accountGastosQuery = clone $baseQuery;
             $accountGastos = $accountGastosQuery
+                ->leftJoin('courses', 'movements.course_id', '=', 'courses.id')
                 ->selectRaw('
-                    account_id,
-                    currency,
+                    movements.account_id,
+                    movements.currency,
                     COUNT(*) as total_movements,
-                    COUNT(CASE WHEN amount_neto < 0 THEN 1 END) as outcome_movements,
-                    SUM(CASE WHEN amount_neto < 0 THEN ABS(amount_neto) ELSE 0 END) as total_gasto
+                    COUNT(CASE WHEN movements.amount_neto < 0 THEN 1 END) as outcome_movements,
+                    SUM(CASE 
+                        WHEN movements.amount_neto < 0 AND movements.course_id IS NOT NULL AND courses.comission IS NOT NULL
+                        THEN ABS(movements.amount_neto) * (courses.comission / 100)
+                        WHEN movements.amount_neto < 0
+                        THEN ABS(movements.amount_neto)
+                        ELSE 0 
+                    END) as total_gasto
                 ')
-                ->whereNotNull('account_id')
-                ->groupBy(['account_id', 'currency'])
+                ->whereNotNull('movements.account_id')
+                ->groupBy(['movements.account_id', 'movements.currency'])
                 ->get();
 
             // Agrupar por cuenta y calcular gastos

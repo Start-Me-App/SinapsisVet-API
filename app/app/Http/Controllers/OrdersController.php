@@ -11,7 +11,12 @@ use App\Models\{Order,OrderDetail,Inscriptions,Installments,InstallmentDetail,Di
 
 use App\Helper\TelegramNotification;
 use Illuminate\Support\Facades\DB;
-
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 use App\Support\TokenManager;
 
@@ -520,6 +525,334 @@ class OrdersController extends Controller
             $telegram = new TelegramNotification();
             $telegram->toTelegram($e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Exportar órdenes a Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportToExcel(Request $request)
+    {
+        try {
+            $query = Order::with(['user', 'orderDetails.course']);
+
+            // Aplicar filtros de fecha si se proporcionan
+            if ($request->has('date_from') && $request->date_from) {
+                $query->where('date_created', '>=', $request->date_from . ' 00:00:00');
+            }
+
+            if ($request->has('date_to') && $request->date_to) {
+                $query->where('date_created', '<=', $request->date_to . ' 23:59:59');
+            }
+
+            $orders = $query->orderBy('id', 'desc')->get();
+
+            // Crear clase para la exportación
+            $export = new class($orders) implements FromCollection, WithHeadings, WithStyles, WithColumnWidths {
+                private $orders;
+
+                public function __construct($orders)
+                {
+                    $this->orders = $orders;
+                }
+
+                public function collection()
+                {
+                    $data = collect();
+
+                    foreach ($this->orders as $order) {
+                        // Fila de cabecera de la orden
+                        $data->push([
+                            $order->id,
+                            $order->user->email ?? 'N/A',
+                            $this->getStatusInSpanish($order->status),
+                            $this->getTotalWithCurrency($order),
+                            $this->getPaymentMethodName($order->payment_method_id),
+                            $order->date_created ? $order->date_created->format('Y-m-d H:i:s') : 'N/A',
+                            '', // Nombre curso (vacío para cabecera)
+                            '', // Precio (vacío para cabecera)
+                            ''  // Con taller (vacío para cabecera)
+                        ]);
+
+                        // Filas de detalles
+                        foreach ($order->orderDetails as $detail) {
+                            $data->push([
+                                '', // ID orden (vacío para detalle)
+                                '', // Email (vacío para detalle)
+                                '', // Estado (vacío para detalle)
+                                '', // Total (vacío para detalle)
+                                '', // Método pago (vacío para detalle)
+                                '', // Fecha (vacía para detalle)
+                                $detail->course->title ?? 'N/A',
+                                $detail->price,
+                                $detail->with_workshop ? 'Sí' : 'No'
+                            ]);
+                        }
+                    }
+
+                    return $data;
+                }
+
+                public function headings(): array
+                {
+                    return [
+                        'ID Orden',
+                        'Email Usuario',
+                        'Estado',
+                        'Total',
+                        'Método de Pago',
+                        'Fecha Creación',
+                        'Nombre Curso',
+                        'Precio',
+                        'Con Taller'
+                    ];
+                }
+
+                public function styles(Worksheet $sheet)
+                {
+                    $row = 2; // Empezar desde la fila 2 (después del encabezado)
+                    
+                    foreach ($this->orders as $order) {
+                        // Estilo para la fila de cabecera
+                        $sheet->getStyle("A{$row}:I{$row}")->getFont()->setBold(true);
+                        $sheet->getStyle("A{$row}:I{$row}")->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setARGB('FFE6F3FF');
+                        
+                        $row++;
+                        
+                        // Estilo para las filas de detalle
+                        for ($i = 0; $i < $order->orderDetails->count(); $i++) {
+                            $sheet->getStyle("A{$row}:F{$row}")->getFont()->setItalic(true);
+                            $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                ->getStartColor()->setARGB('FFF0F0F0');
+                            $row++;
+                        }
+                    }
+
+                    return [];
+                }
+
+                public function columnWidths(): array
+                {
+                    return [
+                        'A' => 10,  // ID Orden
+                        'B' => 25,  // Email Usuario
+                        'C' => 15,  // Estado
+                        'D' => 15,  // Total
+                        'E' => 20,  // Método de Pago
+                        'F' => 20,  // Fecha Creación
+                        'G' => 30,  // Nombre Curso
+                        'H' => 15,  // Precio
+                        'I' => 12,  // Con Taller
+                    ];
+                }
+
+                private function getPaymentMethodName($paymentMethodId)
+                {
+                    $methods = [
+                        1 => 'MercadoPago',
+                        2 => 'Transferencia',
+                        3 => 'Stripe',
+                        4 => 'Efectivo'
+                    ];
+
+                    return $methods[$paymentMethodId] ?? 'Desconocido';
+                }
+
+                private function getStatusInSpanish($status)
+                {
+                    $statuses = [
+                        'paid' => 'Pagado',
+                        'pending' => 'Pendiente',
+                        'annulled' => 'Anulado',
+                        'rejected' => 'Rechazado'
+                    ];
+
+                    return $statuses[$status] ?? $status;
+                }
+
+                private function getTotalWithCurrency($order)
+                {
+                    if ($order->total_amount_usd && $order->total_amount_usd > 0) {
+                        return '$' . number_format($order->total_amount_usd, 2) . ' USD';
+                    } elseif ($order->total_amount_ars && $order->total_amount_ars > 0) {
+                        return '$' . number_format($order->total_amount_ars, 2) . ' ARS';
+                    }
+                    
+                    return '$0.00';
+                }
+            };
+
+            $filename = 'ordenes_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            return Excel::download($export, $filename);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al exportar las órdenes: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Exportar cuotas (installments) a Excel
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportInstallmentsToExcel(Request $request)
+    {
+        try {
+            $query = Installments::with(['order.user', 'installmentDetails']);
+
+            // Aplicar filtros de fecha si se proporcionan
+            if ($request->has('date_from') && $request->date_from) {
+                $query->where('date_created', '>=', $request->date_from . ' 00:00:00');
+            }
+
+            if ($request->has('date_to') && $request->date_to) {
+                $query->where('date_created', '<=', $request->date_to . ' 23:59:59');
+            }
+
+            // Aplicar filtro de estado si se proporciona
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+
+            $installments = $query->orderBy('id', 'desc')->get();
+
+            // Crear clase para la exportación
+            $export = new class($installments) implements FromCollection, WithHeadings, WithStyles, WithColumnWidths {
+                private $installments;
+
+                public function __construct($installments)
+                {
+                    $this->installments = $installments;
+                }
+
+                public function collection()
+                {
+                    $data = collect();
+
+                    foreach ($this->installments as $installment) {
+                        // Fila de cabecera del installment
+                        $data->push([
+                            $installment->id,
+                            $installment->order_id,
+                            $installment->order->user->email ?? 'N/A',
+                            $this->getStatusInSpanish($installment->status),
+                            $installment->amount,
+                            $installment->due_date ? $installment->due_date : 'N/A',
+                            '', // Número de cuota (vacío para cabecera)
+                            '', // Fecha vencimiento cuota (vacío para cabecera)
+                            '', // Fecha pagado (vacío para cabecera)
+                            '', // Pagado (vacío para cabecera)
+                            ''  // URL de pago (vacío para cabecera)
+                        ]);
+
+                        // Filas de detalles de cuotas
+                        foreach ($installment->installmentDetails as $detail) {
+                            $data->push([
+                                '', // ID installment (vacío para detalle)
+                                '', // ID orden (vacío para detalle)
+                                '', // Email (vacío para detalle)
+                                '', // Estado (vacío para detalle)
+                                '', // Cantidad de cuotas (vacío para detalle)
+                                '', // Fecha vencimiento (vacía para detalle)
+                                $detail->installment_number,
+                                $detail->due_date ? $detail->due_date : 'N/A',
+                                $detail->paid_date ? $detail->paid_date : 'N/A',
+                                $detail->paid ? 'Sí' : 'No',
+                                $detail->url_payment ? $detail->url_payment : 'N/A'
+                            ]);
+                        }
+                    }
+
+                    return $data;
+                }
+
+                public function headings(): array
+                {
+                    return [
+                        'ID Installment',
+                        'ID Orden',
+                        'Email Usuario',
+                        'Estado Installment',
+                        'Cantidad de Cuotas',
+                        'Fecha Vencimiento',
+                        'Número de Cuota',
+                        'Fecha Vencimiento Cuota',
+                        'Fecha Pagado',
+                        'Pagado',
+                        'URL de Pago'
+                    ];
+                }
+
+                public function styles(Worksheet $sheet)
+                {
+                    $row = 2; // Empezar desde la fila 2 (después del encabezado)
+                    
+                    foreach ($this->installments as $installment) {
+                        // Estilo para la fila de cabecera
+                        $sheet->getStyle("A{$row}:F{$row}")->getFont()->setBold(true);
+                        $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setARGB('FFE6F3FF');
+                        
+                        $row++;
+                        
+                        // Estilo para las filas de detalle
+                        for ($i = 0; $i < $installment->installmentDetails->count(); $i++) {
+                            $sheet->getStyle("A{$row}:F{$row}")->getFont()->setItalic(true);
+                            $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                ->getStartColor()->setARGB('FFF0F0F0');
+                            $row++;
+                        }
+                    }
+
+                    return [];
+                }
+
+                public function columnWidths(): array
+                {
+                    return [
+                        'A' => 15,  // ID Installment
+                        'B' => 10,  // ID Orden
+                        'C' => 25,  // Email Usuario
+                        'D' => 18,  // Estado Installment
+                        'E' => 18,  // Cantidad de Cuotas
+                        'F' => 18,  // Fecha Vencimiento
+                        'G' => 15,  // Número de Cuota
+                        'H' => 20,  // Fecha Vencimiento Cuota
+                        'I' => 18,  // Fecha Pagado
+                        'J' => 10,  // Pagado
+                        'K' => 30,  // URL de Pago
+                    ];
+                }
+
+                private function getStatusInSpanish($status)
+                {
+                    $statuses = [
+                        'pending' => 'Pendiente',
+                        'paid' => 'Pagado',
+                        'overdue' => 'Vencido',
+                        'cancelled' => 'Cancelado'
+                    ];
+
+                    return $statuses[$status] ?? $status;
+                }
+            };
+
+            $filename = 'cuotas_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            return Excel::download($export, $filename);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al exportar las cuotas: ' . $e->getMessage()], 500);
         }
     }
 }
