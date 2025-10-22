@@ -568,8 +568,11 @@ class OrdersController extends Controller
                         $data->push([
                             $order->id,
                             $order->user->email ?? 'N/A',
+                            $order->user->name ?? 'N/A',
+                            $order->user->phone ?? 'N/A',
                             $this->getStatusInSpanish($order->status),
-                            $this->getTotalWithCurrency($order),
+                            $this->getTotalAmount($order),
+                            $this->getCurrency($order),
                             $this->getPaymentMethodName($order->payment_method_id),
                             $order->date_created ? $order->date_created->format('Y-m-d H:i:s') : 'N/A',
                             '', // Nombre curso (vacío para cabecera)
@@ -582,8 +585,11 @@ class OrdersController extends Controller
                             $data->push([
                                 '', // ID orden (vacío para detalle)
                                 '', // Email (vacío para detalle)
+                                '', // Nombre (vacío para detalle)
+                                '', // Teléfono (vacío para detalle)
                                 '', // Estado (vacío para detalle)
                                 '', // Total (vacío para detalle)
+                                '', // Moneda (vacío para detalle)
                                 '', // Método pago (vacío para detalle)
                                 '', // Fecha (vacía para detalle)
                                 $detail->course->title ?? 'N/A',
@@ -601,8 +607,11 @@ class OrdersController extends Controller
                     return [
                         'ID Orden',
                         'Email Usuario',
+                        'Nombre Usuario',
+                        'Teléfono Usuario',
                         'Estado',
                         'Total',
+                        'Moneda',
                         'Método de Pago',
                         'Fecha Creación',
                         'Nombre Curso',
@@ -617,8 +626,8 @@ class OrdersController extends Controller
                     
                     foreach ($this->orders as $order) {
                         // Estilo para la fila de cabecera
-                        $sheet->getStyle("A{$row}:I{$row}")->getFont()->setBold(true);
-                        $sheet->getStyle("A{$row}:I{$row}")->getFill()
+                        $sheet->getStyle("A{$row}:L{$row}")->getFont()->setBold(true);
+                        $sheet->getStyle("A{$row}:L{$row}")->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                             ->getStartColor()->setARGB('FFE6F3FF');
                         
@@ -626,8 +635,8 @@ class OrdersController extends Controller
                         
                         // Estilo para las filas de detalle
                         for ($i = 0; $i < $order->orderDetails->count(); $i++) {
-                            $sheet->getStyle("A{$row}:F{$row}")->getFont()->setItalic(true);
-                            $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                            $sheet->getStyle("A{$row}:I{$row}")->getFont()->setItalic(true);
+                            $sheet->getStyle("A{$row}:I{$row}")->getFill()
                                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                                 ->getStartColor()->setARGB('FFF0F0F0');
                             $row++;
@@ -642,13 +651,16 @@ class OrdersController extends Controller
                     return [
                         'A' => 10,  // ID Orden
                         'B' => 25,  // Email Usuario
-                        'C' => 15,  // Estado
-                        'D' => 15,  // Total
-                        'E' => 20,  // Método de Pago
-                        'F' => 20,  // Fecha Creación
-                        'G' => 30,  // Nombre Curso
-                        'H' => 15,  // Precio
-                        'I' => 12,  // Con Taller
+                        'C' => 20,  // Nombre Usuario
+                        'D' => 15,  // Teléfono Usuario
+                        'E' => 15,  // Estado
+                        'F' => 15,  // Total
+                        'G' => 10,  // Moneda
+                        'H' => 20,  // Método de Pago
+                        'I' => 20,  // Fecha Creación
+                        'J' => 30,  // Nombre Curso
+                        'K' => 15,  // Precio
+                        'L' => 12,  // Con Taller
                     ];
                 }
 
@@ -676,15 +688,26 @@ class OrdersController extends Controller
                     return $statuses[$status] ?? $status;
                 }
 
-                private function getTotalWithCurrency($order)
+                private function getTotalAmount($order)
                 {
                     if ($order->total_amount_usd && $order->total_amount_usd > 0) {
-                        return '$' . number_format($order->total_amount_usd, 2) . ' USD';
+                        return number_format($order->total_amount_usd, 2);
                     } elseif ($order->total_amount_ars && $order->total_amount_ars > 0) {
-                        return '$' . number_format($order->total_amount_ars, 2) . ' ARS';
+                        return number_format($order->total_amount_ars, 2);
                     }
                     
-                    return '$0.00';
+                    return '0.00';
+                }
+
+                private function getCurrency($order)
+                {
+                    if ($order->total_amount_usd && $order->total_amount_usd > 0) {
+                        return 'USD';
+                    } elseif ($order->total_amount_ars && $order->total_amount_ars > 0) {
+                        return 'ARS';
+                    }
+                    
+                    return 'N/A';
                 }
             };
 
@@ -743,9 +766,14 @@ class OrdersController extends Controller
                             $installment->id,
                             $installment->order_id,
                             $installment->order->user->email ?? 'N/A',
+                            $installment->order->user->name ?? 'N/A',
+                            $installment->order->user->telephone ?? 'N/A',
                             $this->getStatusInSpanish($installment->status),
                             $installment->amount,
                             $installment->due_date ? $installment->due_date : 'N/A',
+                            $this->getTotalAmount($installment->order),
+                            $this->getCurrency($installment->order),
+                            $this->getInstallmentAmount($installment),
                             '', // Número de cuota (vacío para cabecera)
                             '', // Fecha vencimiento cuota (vacío para cabecera)
                             '', // Fecha pagado (vacío para cabecera)
@@ -759,9 +787,14 @@ class OrdersController extends Controller
                                 '', // ID installment (vacío para detalle)
                                 '', // ID orden (vacío para detalle)
                                 '', // Email (vacío para detalle)
+                                '', // Nombre (vacío para detalle)
+                                '', // Teléfono (vacío para detalle)
                                 '', // Estado (vacío para detalle)
                                 '', // Cantidad de cuotas (vacío para detalle)
                                 '', // Fecha vencimiento (vacía para detalle)
+                                '', // Total (vacío para detalle)
+                                '', // Moneda (vacío para detalle)
+                                '', // Monto cuota (vacío para detalle)
                                 $detail->installment_number,
                                 $detail->due_date ? $detail->due_date : 'N/A',
                                 $detail->paid_date ? $detail->paid_date : 'N/A',
@@ -780,9 +813,14 @@ class OrdersController extends Controller
                         'ID Installment',
                         'ID Orden',
                         'Email Usuario',
+                        'Nombre Usuario',
+                        'Teléfono Usuario',
                         'Estado Installment',
                         'Cantidad de Cuotas',
                         'Fecha Vencimiento',
+                        'Total',
+                        'Moneda',
+                        'Monto Cuota',
                         'Número de Cuota',
                         'Fecha Vencimiento Cuota',
                         'Fecha Pagado',
@@ -797,8 +835,8 @@ class OrdersController extends Controller
                     
                     foreach ($this->installments as $installment) {
                         // Estilo para la fila de cabecera
-                        $sheet->getStyle("A{$row}:F{$row}")->getFont()->setBold(true);
-                        $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                        $sheet->getStyle("A{$row}:K{$row}")->getFont()->setBold(true);
+                        $sheet->getStyle("A{$row}:K{$row}")->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                             ->getStartColor()->setARGB('FFE6F3FF');
                         
@@ -806,8 +844,8 @@ class OrdersController extends Controller
                         
                         // Estilo para las filas de detalle
                         for ($i = 0; $i < $installment->installmentDetails->count(); $i++) {
-                            $sheet->getStyle("A{$row}:F{$row}")->getFont()->setItalic(true);
-                            $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                            $sheet->getStyle("A{$row}:K{$row}")->getFont()->setItalic(true);
+                            $sheet->getStyle("A{$row}:K{$row}")->getFill()
                                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                                 ->getStartColor()->setARGB('FFF0F0F0');
                             $row++;
@@ -823,14 +861,19 @@ class OrdersController extends Controller
                         'A' => 15,  // ID Installment
                         'B' => 10,  // ID Orden
                         'C' => 25,  // Email Usuario
-                        'D' => 18,  // Estado Installment
-                        'E' => 18,  // Cantidad de Cuotas
-                        'F' => 18,  // Fecha Vencimiento
-                        'G' => 15,  // Número de Cuota
-                        'H' => 20,  // Fecha Vencimiento Cuota
-                        'I' => 18,  // Fecha Pagado
-                        'J' => 10,  // Pagado
-                        'K' => 30,  // URL de Pago
+                        'D' => 20,  // Nombre Usuario
+                        'E' => 15,  // Teléfono Usuario
+                        'F' => 18,  // Estado Installment
+                        'G' => 18,  // Cantidad de Cuotas
+                        'H' => 18,  // Fecha Vencimiento
+                        'I' => 15,  // Total
+                        'J' => 10,  // Moneda
+                        'K' => 15,  // Monto Cuota
+                        'L' => 15,  // Número de Cuota
+                        'M' => 20,  // Fecha Vencimiento Cuota
+                        'N' => 18,  // Fecha Pagado
+                        'O' => 10,  // Pagado
+                        'P' => 30,  // URL de Pago
                     ];
                 }
 
@@ -844,6 +887,45 @@ class OrdersController extends Controller
                     ];
 
                     return $statuses[$status] ?? $status;
+                }
+
+                private function getTotalAmount($order)
+                {
+                    if ($order->total_amount_usd && $order->total_amount_usd > 0) {
+                        return number_format($order->total_amount_usd, 2);
+                    } elseif ($order->total_amount_ars && $order->total_amount_ars > 0) {
+                        return number_format($order->total_amount_ars, 2);
+                    }
+                    
+                    return '0.00';
+                }
+
+                private function getCurrency($order)
+                {
+                    if ($order->total_amount_usd && $order->total_amount_usd > 0) {
+                        return 'USD';
+                    } elseif ($order->total_amount_ars && $order->total_amount_ars > 0) {
+                        return 'ARS';
+                    }
+                    
+                    return 'N/A';
+                }
+
+                private function getInstallmentAmount($installment)
+                {
+                    $total = 0;
+                    
+                    if ($installment->order->total_amount_usd && $installment->order->total_amount_usd > 0) {
+                        $total = $installment->order->total_amount_usd;
+                    } elseif ($installment->order->total_amount_ars && $installment->order->total_amount_ars > 0) {
+                        $total = $installment->order->total_amount_ars;
+                    }
+                    
+                    if ($total > 0 && $installment->amount > 0) {
+                        return number_format($total / $installment->amount, 2);
+                    }
+                    
+                    return '0.00';
                 }
             };
 
