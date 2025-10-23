@@ -45,7 +45,7 @@ class MovementsController extends Controller
                               ->orderBy('created_at', 'desc')
                               ->get();
 
-            foreach($movements as $movement){
+          /*   foreach($movements as $movement){
                #obtener el numero de orden, el cual se obtiene de la descripcion del movimiento 
                #Si tiene Orden #, entonces se obtiene el numero de orden, y quito todo lo q esta despues de los primeros numeros
                if(strpos($movement->description, 'Orden #') !== false){
@@ -55,7 +55,7 @@ class MovementsController extends Controller
                }
                $order = Order::where('id', (int)$order_number)->with('user')->first();
                $movement->email = $order->user->email;
-            }
+            } */
 
             // Si se solicita descarga como CSV
             if ($request->has('download') && $request->download == 1) {
@@ -104,8 +104,7 @@ class MovementsController extends Controller
                 'Curso',
                 'Cuenta',
                 'Comisión',
-                'Ganancia Final',
-                'Usuario'
+                'Ganancia Final'
             ], ';');
 
             // Datos
@@ -120,8 +119,7 @@ class MovementsController extends Controller
                     $movement->course->title ?? '',
                     $movement->account->nombre ?? '',
                     $movement->course->comission ?? '',
-                     $movement->amount_neto  * ($movement->course->comission / 100 )?? '',
-                     $movement->email ?? ''
+                     $movement->amount_neto  * ($movement->course->comission / 100 )?? ''
                 ], ';');
             }
 
