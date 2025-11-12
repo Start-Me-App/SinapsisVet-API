@@ -222,9 +222,9 @@ class Authcontroller extends Controller
             return response()->json(['error' => 'Usuario o contraseña incorrectos'], 401);
         }    
 
-        if($user->email_verified_at == null){
+   /*      if($user->email_verified_at == null){
             return response()->json(['error' => 'Email no verificado'], 402);
-        }
+        } */
 
         #create jwt token
         $token = TokenManager::makeToken($user);
