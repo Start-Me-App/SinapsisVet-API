@@ -41,7 +41,8 @@ class CoursesController extends Controller
             'presentation' => 'required',
             'professors' => 'required',
             'academic_duration' => 'required',
-            'comission' => 'nullable|numeric'
+            'comission' => 'nullable|numeric',
+            'video_preview_url' => 'nullable'
         ]);
 
         if ($validator->fails()) {
@@ -118,6 +119,7 @@ class CoursesController extends Controller
         $course->certifications = $certifications;
         $course->academic_duration = $data['academic_duration'];
         $course->comission = $data['comission'] ?? 100;
+        $course->video_preview_url = isset($data['video_preview_url']) ? $data['video_preview_url'] : null;
 
 
         if($course->save()){
@@ -183,7 +185,8 @@ class CoursesController extends Controller
             'presentation' => 'required',
             'professors' => 'required',
             'academic_duration' => 'required',
-            'comission' => 'nullable|numeric'
+            'comission' => 'nullable|numeric',
+            'video_preview_url' => 'nullable'
         ]);
 
         if ($validator->fails()) {
@@ -246,7 +249,7 @@ class CoursesController extends Controller
         $course->certifications = $certifications;
         $course->academic_duration = $data['academic_duration'];
         $course->comission = $data['comission'] ?? 100;
-
+        $course->video_preview_url = isset($data['video_preview_url']) ? $data['video_preview_url'] : null;
 
         #check if course is active
         if(isset($data['active'])){
