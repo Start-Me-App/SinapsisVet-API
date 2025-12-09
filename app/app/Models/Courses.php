@@ -33,6 +33,7 @@ class Courses extends Model
         'active',
         'category_id',
         'photo_url',
+        'video_preview_url',
         'starting_date',
         'inscription_date',
         'subtitle',

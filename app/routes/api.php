@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserDecisionController;
 use App\Http\Controllers\CountriesController;
 use App\Http\Controllers\PDFController;
+use App\Http\Controllers\PdfFilesController;
 use App\Http\Controllers\{CategoriesController, CoursesController,LessonsController,WorkshopsController,ExamsController,MaterialsController,FileController,ShoppingCartController};
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ControlAccessMiddleware;
@@ -243,6 +244,14 @@ use App\Http\Controllers\AccountsController;
             Route::delete('/{account_id}', [AccountsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
+        # PDF manager
+        Route::group(['prefix' => 'pdfs'], function () {
+            Route::get('', [PdfFilesController::class,'index'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('', [PdfFilesController::class,'store'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{pdf_id}', [PdfFilesController::class,'destroy'])->middleware(ControlAccessMiddleware::class.':admin');
+        });
+       
+       
        
 
     })->middleware(ControlAccessMiddleware::class.':admin');
