@@ -43,14 +43,15 @@ class CoursesController extends Controller
             'academic_duration' => 'required',
             'comission' => 'nullable|numeric',
             'video_preview_url' => 'nullable',
-            'recorded_course' => 'nullable|boolean'
+            'recorded_course' => 'nullable|boolean',
+            'masterclass' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-      
+
 
 
         #validate if course already exists
@@ -122,6 +123,7 @@ class CoursesController extends Controller
         $course->comission = $data['comission'] ?? 100;
         $course->video_preview_url = isset($data['video_preview_url']) ? $data['video_preview_url'] : null;
         $course->recorded_course = isset($data['recorded_course']) ? $data['recorded_course'] : false;
+        $course->masterclass = isset($data['masterclass']) ? $data['masterclass'] : false;
 
 
         if($course->save()){
@@ -189,7 +191,8 @@ class CoursesController extends Controller
             'academic_duration' => 'required',
             'comission' => 'nullable|numeric',
             'video_preview_url' => 'nullable',
-            'recorded_course' => 'nullable|boolean'
+            'recorded_course' => 'nullable|boolean',
+            'masterclass' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -254,6 +257,7 @@ class CoursesController extends Controller
         $course->comission = $data['comission'] ?? 100;
         $course->video_preview_url = isset($data['video_preview_url']) ? $data['video_preview_url'] : null;
         $course->recorded_course = isset($data['recorded_course']) ? $data['recorded_course'] : false;
+        $course->masterclass = isset($data['masterclass']) ? $data['masterclass'] : false;
 
         #check if course is active
         if(isset($data['active'])){
