@@ -21,6 +21,7 @@ use App\Http\Controllers\DiscountsController;
 use App\Http\Controllers\CouponsController;
 use App\Http\Controllers\MovementsController;
 use App\Http\Controllers\AccountsController;
+use App\Http\Controllers\HotmartController;
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -63,6 +64,12 @@ use App\Http\Controllers\AccountsController;
     Route::post('/stripe/paymentIntent', [PaymentIntentController::class,'createPaymentIntent']);
     Route::post('/stripe/webhook', [StripeWebhookController::class,'handleWebhook']);
 
+    #hotmart
+    Route::post('/hotmart/webhook', [HotmartController::class,'webhook']);
+    Route::get('/hotmart/test', [HotmartController::class,'testConnection']);
+    Route::get('/hotmart/subscription/{subscriber_code}', [HotmartController::class,'getSubscription']);
+    Route::get('/hotmart/sales', [HotmartController::class,'getSalesHistory']);
+
 
     Route::post('/cleanUpOrders', [OrdersController::class,'cleanUpOrders']);
 
@@ -85,6 +92,9 @@ use App\Http\Controllers\AccountsController;
 
     Route::group(['prefix' => 'lessons'], function () {
         Route::post('/{lesson_id}/view', [LessonsController::class,'viewLesson']);
+
+        // Rutas de asistencias (públicas para consulta)
+        Route::get('/{lesson_id}/attendances', [LessonsController::class,'getAttendances']);
     });
 
     #create route group for courses
@@ -142,6 +152,12 @@ use App\Http\Controllers\AccountsController;
             Route::delete('/{lesson_id}', [LessonsController::class,'delete'])->middleware(ControlAccessMiddleware::class.':admin');
 
             Route::get('/{lesson_id}', [LessonsController::class,'getLesson'])->middleware(ControlAccessMiddleware::class.':admin');
+
+            // Rutas de gestión de asistencias (solo admin)
+            Route::get('/{lesson_id}/eligible-students', [LessonsController::class,'getEligibleStudents'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{lesson_id}/attendance', [LessonsController::class,'markAttendance'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{lesson_id}/attendance/multiple', [LessonsController::class,'markMultipleAttendances'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::delete('/{lesson_id}/attendance/{user_id}', [LessonsController::class,'removeAttendance'])->middleware(ControlAccessMiddleware::class.':admin');
         });
 
         #create route group for workshops
@@ -199,6 +215,7 @@ use App\Http\Controllers\AccountsController;
         #create route group for installments
         Route::group(['prefix' => 'installments'], function () {
             Route::get('/export', [OrdersController::class,'exportInstallmentsToExcel'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::patch('/{installment_id}/due-date', [OrdersController::class,'updateInstallmentDueDate'])->middleware(ControlAccessMiddleware::class.':admin');
         }); 
 
 

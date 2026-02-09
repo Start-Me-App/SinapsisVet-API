@@ -7,7 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, User, Lessons,Materials,ViewLesson};
+use App\Models\{Courses, User, Lessons,Materials,ViewLesson,Inscriptions};
 use Illuminate\Support\Facades\Input;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -290,7 +290,7 @@ class LessonsController extends Controller
 
 
     /**
-     * view lesson 
+     * view lesson
      *
      * @param $provider
      * @return JsonResponse
@@ -298,8 +298,8 @@ class LessonsController extends Controller
     public function viewLesson(Request $request,$lesson_id)
     {
         $data = $request->all();
-        $lesson = Lessons::find($lesson_id);           
-        
+        $lesson = Lessons::find($lesson_id);
+
         if(!$lesson){
             return response()->json(['error' => 'Leccion no encontrada'], 404);
         }
@@ -318,6 +318,374 @@ class LessonsController extends Controller
 
         return response()->json(['data' => $viewLesson ], 200);
 
+    }
+
+    /**
+     * Obtener lista de asistencias de una lección
+     *
+     * Retorna los usuarios que ya marcaron asistencia
+     *
+     * @param Request $request
+     * @param int $lesson_id
+     * @return JsonResponse
+     */
+    public function getAttendances(Request $request, $lesson_id): JsonResponse
+    {
+        try {
+            $lesson = Lessons::find($lesson_id);
+
+            if (!$lesson) {
+                return response()->json(['error' => 'Lección no encontrada'], 404);
+            }
+
+            // Obtener todas las asistencias con información del usuario
+            $attendances = ViewLesson::with('user:id,name,email,telephone')
+                ->where('lesson_id', $lesson_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Formatear la respuesta
+            $formattedAttendances = $attendances->map(function ($attendance) {
+                return [
+                    'id' => $attendance->id,
+                    'user_id' => $attendance->user_id,
+                    'user_name' => $attendance->user->name ?? 'N/A',
+                    'user_email' => $attendance->user->email ?? 'N/A',
+                    'user_phone' => $attendance->user->telephone ?? 'N/A',
+                    'marked_at' => $attendance->created_at,
+                ];
+            });
+
+            return response()->json([
+                'lesson_id' => $lesson_id,
+                'lesson_name' => $lesson->name,
+                'total_attendances' => $attendances->count(),
+                'attendances' => $formattedAttendances
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener asistencias',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener lista de usuarios elegibles para una lección
+     *
+     * Retorna todos los usuarios inscritos en el curso,
+     * indicando quiénes ya marcaron asistencia
+     *
+     * @param Request $request
+     * @param int $lesson_id
+     * @return JsonResponse
+     */
+    public function getEligibleStudents(Request $request, $lesson_id): JsonResponse
+    {
+        try {
+            $lesson = Lessons::with('course')->find($lesson_id);
+
+            if (!$lesson) {
+                return response()->json(['error' => 'Lección no encontrada'], 404);
+            }
+
+            if (!$lesson->course) {
+                return response()->json(['error' => 'Curso no encontrado para esta lección'], 404);
+            }
+
+            // Obtener todos los usuarios inscritos en el curso
+            $inscriptions = Inscriptions::with('student:id,name,email,telephone')
+                ->where('course_id', $lesson->course_id)
+                ->get();
+
+            // Obtener los IDs de usuarios que ya tienen asistencia marcada
+            $attendedUserIds = ViewLesson::where('lesson_id', $lesson_id)
+                ->pluck('user_id')
+                ->toArray();
+
+            // Formatear la lista de estudiantes
+            $students = $inscriptions->map(function ($inscription) use ($attendedUserIds, $lesson_id) {
+                $hasAttendance = in_array($inscription->user_id, $attendedUserIds);
+
+                // Obtener el registro de asistencia si existe
+                $attendanceRecord = null;
+                if ($hasAttendance) {
+                    $attendanceRecord = ViewLesson::where('lesson_id', $lesson_id)
+                        ->where('user_id', $inscription->user_id)
+                        ->first();
+                }
+
+                return [
+                    'user_id' => $inscription->user_id,
+                    'name' => $inscription->student->name ?? 'N/A',
+                    'email' => $inscription->student->email ?? 'N/A',
+                    'phone' => $inscription->student->telephone ?? 'N/A',
+                    'has_attendance' => $hasAttendance,
+                    'attendance_id' => $attendanceRecord ? $attendanceRecord->id : null,
+                    'attended_at' => $attendanceRecord ? $attendanceRecord->created_at : null,
+                ];
+            });
+
+            // Estadísticas
+            $totalStudents = $students->count();
+            $attendedCount = $students->where('has_attendance', true)->count();
+            $missingCount = $totalStudents - $attendedCount;
+
+            return response()->json([
+                'lesson_id' => $lesson_id,
+                'lesson_name' => $lesson->name,
+                'course_id' => $lesson->course_id,
+                'course_name' => $lesson->course->title ?? 'N/A',
+                'statistics' => [
+                    'total_students' => $totalStudents,
+                    'attended' => $attendedCount,
+                    'missing' => $missingCount,
+                    'attendance_percentage' => $totalStudents > 0
+                        ? round(($attendedCount / $totalStudents) * 100, 2)
+                        : 0
+                ],
+                'students' => $students
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener estudiantes',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Marcar asistencia de un usuario a una lección
+     *
+     * Permite a un admin marcar la asistencia de cualquier usuario
+     *
+     * @param Request $request
+     * @param int $lesson_id
+     * @return JsonResponse
+     */
+    public function markAttendance(Request $request, $lesson_id): JsonResponse
+    {
+        try {
+            $validator = validator($request->all(), [
+                'user_id' => 'required|integer|exists:users,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            $lesson = Lessons::find($lesson_id);
+
+            if (!$lesson) {
+                return response()->json(['error' => 'Lección no encontrada'], 404);
+            }
+
+            $userId = $request->input('user_id');
+
+            // Verificar que el usuario esté inscrito en el curso
+            $inscription = Inscriptions::where('user_id', $userId)
+                ->where('course_id', $lesson->course_id)
+                ->first();
+
+            if (!$inscription) {
+                return response()->json([
+                    'error' => 'El usuario no está inscrito en este curso'
+                ], 403);
+            }
+
+            // Verificar si ya existe la asistencia
+            $existingAttendance = ViewLesson::where('user_id', $userId)
+                ->where('lesson_id', $lesson_id)
+                ->first();
+
+            if ($existingAttendance) {
+                return response()->json([
+                    'message' => 'La asistencia ya fue marcada previamente',
+                    'data' => [
+                        'id' => $existingAttendance->id,
+                        'user_id' => $existingAttendance->user_id,
+                        'lesson_id' => $existingAttendance->lesson_id,
+                        'marked_at' => $existingAttendance->created_at
+                    ]
+                ], 200);
+            }
+
+            // Crear la asistencia
+            $attendance = new ViewLesson();
+            $attendance->user_id = $userId;
+            $attendance->lesson_id = $lesson_id;
+            $attendance->save();
+
+            // Obtener información del usuario
+            $user = User::select('id', 'name', 'email')->find($userId);
+
+            return response()->json([
+                'message' => 'Asistencia marcada correctamente',
+                'data' => [
+                    'id' => $attendance->id,
+                    'user_id' => $attendance->user_id,
+                    'user_name' => $user->name ?? 'N/A',
+                    'user_email' => $user->email ?? 'N/A',
+                    'lesson_id' => $attendance->lesson_id,
+                    'lesson_name' => $lesson->name,
+                    'marked_at' => $attendance->created_at
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al marcar asistencia',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Eliminar asistencia de un usuario a una lección
+     *
+     * Permite desmarcar la asistencia de un usuario
+     *
+     * @param Request $request
+     * @param int $lesson_id
+     * @param int $user_id
+     * @return JsonResponse
+     */
+    public function removeAttendance(Request $request, $lesson_id, $user_id): JsonResponse
+    {
+        try {
+            $lesson = Lessons::find($lesson_id);
+
+            if (!$lesson) {
+                return response()->json(['error' => 'Lección no encontrada'], 404);
+            }
+
+            $attendance = ViewLesson::where('lesson_id', $lesson_id)
+                ->where('user_id', $user_id)
+                ->first();
+
+            if (!$attendance) {
+                return response()->json([
+                    'error' => 'No se encontró asistencia para este usuario en esta lección'
+                ], 404);
+            }
+
+            $attendanceData = [
+                'id' => $attendance->id,
+                'user_id' => $attendance->user_id,
+                'lesson_id' => $attendance->lesson_id,
+                'marked_at' => $attendance->created_at
+            ];
+
+            $attendance->delete();
+
+            return response()->json([
+                'message' => 'Asistencia eliminada correctamente',
+                'data' => $attendanceData
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al eliminar asistencia',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Marcar asistencia múltiple
+     *
+     * Permite marcar asistencia de varios usuarios a la vez
+     *
+     * @param Request $request
+     * @param int $lesson_id
+     * @return JsonResponse
+     */
+    public function markMultipleAttendances(Request $request, $lesson_id): JsonResponse
+    {
+        try {
+            $validator = validator($request->all(), [
+                'user_ids' => 'required|array',
+                'user_ids.*' => 'integer|exists:users,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            $lesson = Lessons::find($lesson_id);
+
+            if (!$lesson) {
+                return response()->json(['error' => 'Lección no encontrada'], 404);
+            }
+
+            $userIds = $request->input('user_ids');
+            $results = [
+                'created' => [],
+                'already_exists' => [],
+                'not_enrolled' => []
+            ];
+
+            foreach ($userIds as $userId) {
+                // Verificar inscripción
+                $inscription = Inscriptions::where('user_id', $userId)
+                    ->where('course_id', $lesson->course_id)
+                    ->first();
+
+                if (!$inscription) {
+                    $user = User::find($userId);
+                    $results['not_enrolled'][] = [
+                        'user_id' => $userId,
+                        'user_name' => $user->name ?? 'N/A'
+                    ];
+                    continue;
+                }
+
+                // Verificar si ya existe
+                $existingAttendance = ViewLesson::where('user_id', $userId)
+                    ->where('lesson_id', $lesson_id)
+                    ->first();
+
+                if ($existingAttendance) {
+                    $results['already_exists'][] = [
+                        'user_id' => $userId,
+                        'attendance_id' => $existingAttendance->id
+                    ];
+                    continue;
+                }
+
+                // Crear asistencia
+                $attendance = new ViewLesson();
+                $attendance->user_id = $userId;
+                $attendance->lesson_id = $lesson_id;
+                $attendance->save();
+
+                $results['created'][] = [
+                    'user_id' => $userId,
+                    'attendance_id' => $attendance->id
+                ];
+            }
+
+            return response()->json([
+                'message' => 'Proceso de asistencias completado',
+                'lesson_id' => $lesson_id,
+                'lesson_name' => $lesson->name,
+                'results' => $results,
+                'summary' => [
+                    'created' => count($results['created']),
+                    'already_exists' => count($results['already_exists']),
+                    'not_enrolled' => count($results['not_enrolled']),
+                    'total_processed' => count($userIds)
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al marcar asistencias múltiples',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
 

@@ -100,7 +100,7 @@ class MercadoPagoUtils {
                 "statement_descriptor" => "NAME_DISPLAYED_IN_USER_BILLING",
                 "external_reference" => $order_data['external_reference'],
                 "expires" => false,
-                "auto_return" => 'approved',
+                "auto_return" => 'success',
 
                 "notification_url" => self::getWebhookUrl(),
             ];

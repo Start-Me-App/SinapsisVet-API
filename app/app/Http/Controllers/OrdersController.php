@@ -239,7 +239,7 @@ class OrdersController extends Controller
         }
 
         if($account_id == 2 || $account_id == 7){
-            $currency = 1; 
+            $currency = 1;
         }else{
             $currency = 2;
         }
@@ -247,9 +247,13 @@ class OrdersController extends Controller
         $commission_percentage = $request->input('commission_percentage');
 
         $installmentDetail = InstallmentDetail::find($installment_id);
-        
-        $installmentDetail->url_payment = $request->input('url_payment');   
-        #$installmentDetail->due_date = $request->input('due_date');
+
+        $installmentDetail->url_payment = $request->input('url_payment');
+
+        // Actualizar fecha de vencimiento si se proporciona
+        if($request->has('due_date') && $request->input('due_date')){
+            $installmentDetail->due_date = $request->input('due_date');
+        }
         if($request->input('paid')){
             $installmentDetail->paid_date = date('Y-m-d H:i:s');
 
@@ -337,6 +341,64 @@ class OrdersController extends Controller
 
 
 
+
+    /**
+     * Actualizar solo la fecha de vencimiento de una cuota
+     *
+     * @param int $installment_id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateInstallmentDueDate($installment_id, Request $request): JsonResponse
+    {
+        try {
+            $validator = validator($request->all(), [
+                'due_date' => 'required|date'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            $installmentDetail = InstallmentDetail::find($installment_id);
+
+            if (!$installmentDetail) {
+                return response()->json(['error' => 'Cuota no encontrada'], 404);
+            }
+
+            // Guardar fecha anterior para el log
+            $oldDueDate = $installmentDetail->due_date;
+
+            // Actualizar fecha de vencimiento
+            $installmentDetail->due_date = $request->input('due_date');
+            $installmentDetail->save();
+
+            // Actualizar fecha de última actualización del installment padre
+            $installment = Installments::find($installmentDetail->installment_id);
+            if ($installment) {
+                $installment->date_last_updated = date('Y-m-d H:i:s');
+                $installment->save();
+            }
+
+            return response()->json([
+                'message' => 'Fecha de vencimiento actualizada correctamente',
+                'data' => [
+                    'installment_detail_id' => $installmentDetail->id,
+                    'installment_number' => $installmentDetail->installment_number,
+                    'old_due_date' => $oldDueDate,
+                    'new_due_date' => $installmentDetail->due_date,
+                    'paid' => $installmentDetail->paid,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al actualizar la fecha de vencimiento',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function getAllInstallments(Request $request)
     {
