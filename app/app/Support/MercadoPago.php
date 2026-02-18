@@ -187,4 +187,7 @@ class MercadoPagoUtils {
             report($e);
             return WSResponse::GetResponse(false,'Error al obtener el pago',$e->getMessage());
         }
-        /*
+
+    }
+
+    

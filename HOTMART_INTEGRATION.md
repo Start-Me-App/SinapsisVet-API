@@ -37,7 +37,10 @@ Accede a [Hotmart Developer Portal](https://app-vlc.hotmart.com/tools/api) y cre
    - **Client ID**
    - **Client Secret**
    - **Basic Auth** (código base64 para autenticación)
-   - **Hottok** (token para validar webhooks)
+
+**Nota importante:** Hotmart ya no proporciona el **hottok** en las versiones recientes de su API. La validación del webhook ahora se hace mediante:
+- Validación de estructura del payload
+- Validación de IPs (opcional, recomendado en producción)
 
 ### 2. Configurar Variables de Entorno
 
@@ -48,7 +51,8 @@ Agrega estas variables a tu archivo `.env`:
 HOTMART_CLIENT_ID=tu_client_id_aqui
 HOTMART_CLIENT_SECRET=tu_client_secret_aqui
 HOTMART_BASIC_AUTH=tu_basic_auth_aqui
-HOTMART_HOTTOK=tu_hottok_aqui
+HOTMART_HOTTOK=
+# Nota: HOTMART_HOTTOK ya no es necesario (déjalo vacío)
 HOTMART_API_URL=https://developers.hotmart.com
 HOTMART_WEBHOOK_PATH=/api/hotmart/webhook
 ```
@@ -120,8 +124,27 @@ Responsabilidades:
 POST /api/hotmart/webhook
 ```
 
-**Headers requeridos:**
-- `X-Hotmart-Hottok`: Token de autenticación enviado por Hotmart
+**Headers (opcional):**
+- `X-Hotmart-Hottok`: Token de autenticación (ya no se usa en versiones recientes, pero se mantiene compatibilidad)
+
+**Validación de Seguridad:**
+
+La API ahora valida los webhooks mediante:
+
+1. **Validación de estructura del payload**: Verifica que el webhook tenga los campos `event` y `data` esperados
+2. **Validación de IP (opcional)**: Puedes habilitar whitelist de IPs de Hotmart en el código
+
+Para habilitar la validación por IP, edita [app/Support/Hotmart.php](app/app/Support/Hotmart.php) y descomenta estas líneas:
+
+```php
+// IPs oficiales de Hotmart
+$hotmartIPs = ['52.1.157.61', '34.198.237.172', '52.21.45.174', '52.72.166.146'];
+$requestIP = request()->ip();
+if (!in_array($requestIP, $hotmartIPs)) {
+    Log::warning('Webhook desde IP no autorizada', ['ip' => $requestIP]);
+    return false;
+}
+```
 
 ### Eventos Soportados
 
@@ -474,9 +497,14 @@ tail -f storage/logs/laravel.log
 
 ### Error: "Token de autenticación inválido"
 
-**Causa:** El `HOTMART_HOTTOK` en `.env` no coincide con el enviado por Hotmart.
+**Causa:** Si ves este error, es porque tienes un `HOTMART_HOTTOK` configurado pero Hotmart ya no lo envía.
 
-**Solución:** Verifica que el valor en `.env` sea exactamente el mismo que aparece en el panel de Hotmart.
+**Solución:**
+1. Deja `HOTMART_HOTTOK` vacío en tu `.env`:
+   ```env
+   HOTMART_HOTTOK=
+   ```
+2. La validación ahora se hace por estructura del payload, no por hottok
 
 ---
 
@@ -532,7 +560,10 @@ INSERT INTO payment_methods (id, name) VALUES (5, 'Hotmart');
 
 ## Notas Importantes
 
-1. **Seguridad:** El `hottok` es crítico para la seguridad. Manténlo secreto y no lo compartas.
+1. **Seguridad:**
+   - El `hottok` ya no se usa en versiones recientes de Hotmart
+   - Para mayor seguridad en producción, habilita la validación por IP (ver sección de Webhooks)
+   - Mantén tus credenciales `CLIENT_ID`, `CLIENT_SECRET` y `BASIC_AUTH` secretas
 
 2. **Idempotencia:** Los webhooks pueden enviarse múltiples veces. El sistema verifica duplicados usando `external_reference`.
 
@@ -543,6 +574,86 @@ INSERT INTO payment_methods (id, name) VALUES (5, 'Hotmart');
 5. **Auditoría:** Todos los eventos se registran en `hotmart_events` para auditoría, incluso si fallan.
 
 6. **Logs:** Usa `storage/logs/laravel.log` para debugging y monitoreo de eventos.
+
+---
+
+## Configuración Actualizada (Sin Hottok)
+
+### Variables de Entorno Mínimas
+
+```env
+# Solo necesitas estas 3 variables principales:
+HOTMART_CLIENT_ID=abc123...
+HOTMART_CLIENT_SECRET=xyz789...
+HOTMART_BASIC_AUTH=YWJjMTIzOnh5ejc4OQ==
+
+# Estas son opcionales (usa los valores por defecto):
+HOTMART_HOTTOK=
+HOTMART_API_URL=https://developers.hotmart.com
+HOTMART_WEBHOOK_PATH=/api/hotmart/webhook
+```
+
+### Prueba de Webhook Sin Hottok
+
+Puedes probar el webhook localmente sin hottok:
+
+```bash
+curl -X POST http://localhost:8000/api/hotmart/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event": "PURCHASE_APPROVED",
+    "data": {
+      "buyer": {
+        "email": "test@example.com",
+        "name": "Test User"
+      },
+      "product": {
+        "id": "12345",
+        "name": "Test Course"
+      },
+      "purchase": {
+        "transaction": "TEST123",
+        "status": "APPROVED",
+        "approved_date": "2026-02-09T10:00:00Z",
+        "price": {
+          "value": 99.99,
+          "currency_code": "USD"
+        }
+      }
+    }
+  }'
+```
+
+La respuesta debe ser:
+```json
+{
+  "success": true,
+  "message": "Webhook procesado correctamente"
+}
+```
+
+### Validación de IP (Opcional pero Recomendado)
+
+Para habilitar validación por IP en producción, edita [app/Support/Hotmart.php](app/app/Support/Hotmart.php):
+
+```php
+public static function validateWebhook(array $webhookData): bool
+{
+    // ... código existente ...
+
+    // Descomentar estas líneas:
+    $hotmartIPs = ['52.1.157.61', '34.198.237.172', '52.21.45.174', '52.72.166.146'];
+    $requestIP = request()->ip();
+    if (!in_array($requestIP, $hotmartIPs)) {
+        Log::warning('Webhook desde IP no autorizada', ['ip' => $requestIP]);
+        return false;
+    }
+
+    return true;
+}
+```
+
+**Nota:** Las IPs de Hotmart pueden cambiar. Verifica las IPs actuales en la documentación oficial de Hotmart.
 
 ---
 

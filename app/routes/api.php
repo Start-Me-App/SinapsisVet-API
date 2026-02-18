@@ -22,6 +22,7 @@ use App\Http\Controllers\CouponsController;
 use App\Http\Controllers\MovementsController;
 use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\HotmartController;
+use App\Http\Controllers\HotmartDiagnosticController;
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -67,6 +68,8 @@ use App\Http\Controllers\HotmartController;
     #hotmart
     Route::post('/hotmart/webhook', [HotmartController::class,'webhook']);
     Route::get('/hotmart/test', [HotmartController::class,'testConnection']);
+    Route::get('/hotmart/diagnose', [HotmartDiagnosticController::class,'diagnose']);
+    Route::get('/hotmart/generate-basic-auth', [HotmartDiagnosticController::class,'generateBasicAuth']);
     Route::get('/hotmart/subscription/{subscriber_code}', [HotmartController::class,'getSubscription']);
     Route::get('/hotmart/sales', [HotmartController::class,'getSalesHistory']);
 

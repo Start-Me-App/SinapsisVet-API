@@ -17,28 +17,33 @@ class HotmartController extends Controller
      * Hotmart envía notificaciones POST a esta URL cuando ocurren eventos
      * como compras, cancelaciones, reembolsos, etc.
      *
+     * Nota: Hotmart ya no usa hottok en las versiones recientes de la API.
+     *
      * @param Request $request
      * @return JsonResponse
      */
     public function webhook(Request $request): JsonResponse
     {
         try {
-            // Validar el token de autenticación (hottok)
-            $hottok = $request->header('X-Hotmart-Hottok');
+            // Obtener datos del webhook
+            $webhookData = $request->all();
 
-            if (!$hottok) {
-                Log::warning('Webhook de Hotmart recibido sin hottok', [
+            // Validar estructura del webhook
+            if (!Hotmart::validateWebhook($webhookData)) {
+                Log::warning('Webhook de Hotmart con estructura inválida', [
                     'ip' => $request->ip(),
-                    'headers' => $request->headers->all()
+                    'data' => $webhookData
                 ]);
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Token de autenticación no proporcionado'
-                ], 401);
+                    'message' => 'Webhook inválido'
+                ], 400);
             }
 
-            if (!Hotmart::validateWebhookToken($hottok)) {
+            // Validar hottok si está presente (backward compatibility)
+            $hottok = $request->header('X-Hotmart-Hottok');
+            if ($hottok && !Hotmart::validateWebhookToken($hottok)) {
                 Log::warning('Webhook de Hotmart con hottok inválido', [
                     'hottok' => $hottok,
                     'ip' => $request->ip()
@@ -50,11 +55,10 @@ class HotmartController extends Controller
                 ], 401);
             }
 
-            // Obtener datos del webhook
-            $webhookData = $request->all();
-
             Log::info('Webhook de Hotmart recibido', [
                 'event' => $webhookData['event'] ?? 'unknown',
+                'ip' => $request->ip(),
+                'has_hottok' => !empty($hottok),
                 'data' => $webhookData
             ]);
 
@@ -238,12 +242,7 @@ class HotmartController extends Controller
     /**
      * Encontrar curso por product_id de Hotmart
      *
-     * Debes implementar la lógica para mapear los product_id de Hotmart
-     * con tus course_id. Algunas opciones:
-     *
-     * 1. Agregar un campo 'hotmart_product_id' a la tabla courses
-     * 2. Crear una tabla de mapeo hotmart_products
-     * 3. Usar un array de configuración
+     * Busca un curso que tenga configurado el hotmart_product_id
      *
      * @param string|null $hotmartProductId
      * @return Courses|null
@@ -254,20 +253,8 @@ class HotmartController extends Controller
             return null;
         }
 
-        // Opción 1: Si tienes un campo hotmart_product_id en courses
-        // return Courses::where('hotmart_product_id', $hotmartProductId)->first();
-
-        // Opción 2: Mapeo manual (temporal)
-        $productMapping = [
-            // 'hotmart_product_id' => course_id
-            // Ejemplo: '12345' => 1,
-        ];
-
-        if (isset($productMapping[$hotmartProductId])) {
-            return Courses::find($productMapping[$hotmartProductId]);
-        }
-
-        return null;
+        // Buscar por el campo hotmart_product_id
+        return Courses::where('hotmart_product_id', $hotmartProductId)->first();
     }
 
     /**

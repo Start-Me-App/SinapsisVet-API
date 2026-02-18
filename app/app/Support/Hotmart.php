@@ -64,7 +64,6 @@ class Hotmart
         $this->apiUrl = env('HOTMART_API_URL', 'https://developers.hotmart.com');
 
         $this->client = new Client([
-            'base_uri' => $this->apiUrl,
             'timeout' => 30,
             'headers' => [
                 'Content-Type' => 'application/json',
@@ -82,17 +81,63 @@ class Hotmart
     }
 
     /**
-     * Validar el token de autenticación del webhook (hottok)
+     * Validar el webhook de Hotmart
      *
-     * @param string $hottok Token recibido en el header X-HOTMART-HOTTOK
+     * Hotmart ya no usa hottok en las versiones recientes de la API.
+     * La validación se puede hacer de otras formas:
+     * 1. Verificar la estructura del payload
+     * 2. Usar IP whitelisting (recomendado en producción)
+     * 3. Verificar que el evento tenga datos válidos
+     *
+     * @param array $webhookData Datos del webhook
      * @return bool
      */
-    public static function validateWebhookToken(string $hottok): bool
+    public static function validateWebhook(array $webhookData): bool
     {
+        // Validación básica: verificar que tenga estructura válida de Hotmart
+        if (empty($webhookData)) {
+            Log::warning('Webhook de Hotmart recibido sin datos');
+            return false;
+        }
+
+        // Verificar que tenga al menos el campo 'event' o 'data'
+        if (!isset($webhookData['event']) && !isset($webhookData['data'])) {
+            Log::warning('Webhook de Hotmart con estructura inválida', $webhookData);
+            return false;
+        }
+
+        // Opcional: Validar IPs de Hotmart (descomentar para usar)
+        // $hotmartIPs = ['52.1.157.61', '34.198.237.172', '52.21.45.174', '52.72.166.146'];
+        // $requestIP = request()->ip();
+        // if (!in_array($requestIP, $hotmartIPs)) {
+        //     Log::warning('Webhook de Hotmart desde IP no autorizada', ['ip' => $requestIP]);
+        //     return false;
+        // }
+
+        return true;
+    }
+
+    /**
+     * Validar el token de autenticación del webhook (hottok) - DEPRECATED
+     *
+     * Este método se mantiene por compatibilidad pero hottok ya no se usa.
+     *
+     * @param string|null $hottok Token recibido en el header X-HOTMART-HOTTOK
+     * @return bool
+     */
+    public static function validateWebhookToken(?string $hottok): bool
+    {
+        // Si no hay hottok configurado, considerar válido (nuevo sistema)
         $expectedToken = env('HOTMART_HOTTOK');
 
         if (empty($expectedToken)) {
-            Log::warning('HOTMART_HOTTOK no está configurado en .env');
+            Log::info('HOTMART_HOTTOK no configurado, saltando validación de hottok');
+            return true; // Cambiar a true para permitir webhooks sin hottok
+        }
+
+        // Si hay hottok configurado, validarlo
+        if (empty($hottok)) {
+            Log::warning('HOTMART_HOTTOK configurado pero no recibido en el webhook');
             return false;
         }
 
@@ -101,6 +146,8 @@ class Hotmart
 
     /**
      * Obtener access token mediante OAuth 2.0
+     *
+     * Usa el endpoint: POST https://api-sec-vlc.hotmart.com/security/oauth/token
      *
      * @return array
      */
@@ -115,14 +162,16 @@ class Hotmart
                 ];
             }
 
-            $response = $this->client->post('/security/oauth/token', [
+            // URL completa con parámetros según documentación de Hotmart
+            $url = 'https://api-sec-vlc.hotmart.com/security/oauth/token';
+            $url .= '?grant_type=client_credentials';
+            $url .= '&client_id=' . urlencode($this->clientId);
+            $url .= '&client_secret=' . urlencode($this->clientSecret);
+
+            $response = $this->client->post($url, [
                 'headers' => [
+                    'Content-Type' => 'application/json',
                     'Authorization' => 'Basic ' . $this->basicAuth,
-                ],
-                'form_params' => [
-                    'grant_type' => 'client_credentials',
-                    'client_id' => $this->clientId,
-                    'client_secret' => $this->clientSecret,
                 ]
             ]);
 
@@ -130,6 +179,13 @@ class Hotmart
 
             if (isset($data['access_token'])) {
                 $this->accessToken = $data['access_token'];
+
+                Log::info('Access token de Hotmart obtenido exitosamente', [
+                    'token_type' => $data['token_type'] ?? null,
+                    'expires_in' => $data['expires_in'] ?? null,
+                    'scope' => $data['scope'] ?? null,
+                ]);
+
                 return [
                     'success' => true,
                     'message' => 'Token obtenido con éxito',
@@ -144,7 +200,10 @@ class Hotmart
             ];
 
         } catch (GuzzleException $e) {
-            Log::error('Error obteniendo access token de Hotmart: ' . $e->getMessage());
+            Log::error('Error obteniendo access token de Hotmart: ' . $e->getMessage(), [
+                'client_id' => $this->clientId,
+                'has_basic_auth' => !empty($this->basicAuth),
+            ]);
             return [
                 'success' => false,
                 'message' => 'Error al obtener el access token: ' . $e->getMessage(),
