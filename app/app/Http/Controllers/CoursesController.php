@@ -739,12 +739,27 @@ class CoursesController extends Controller
      * @return JsonResponse
      */
     public function listAllCourses(Request $request)
-    {   
+    {
 
         $params = $request->all();
-      
+
         $list = Courses::with(['category','professors','custom_fields'])->get();
-      
+
+        return response()->json(['data' => $list], 200);
+    }
+
+    /**
+     * Listado de masterclasses (admin)
+     *
+     * @return JsonResponse
+     */
+    public function listAllMasterclasses(Request $request)
+    {
+        $list = Courses::with(['category','professors','custom_fields','lessons.materials','lessons.professor'])
+            ->where('masterclass', 1)
+            ->orderBy('id', 'desc')
+            ->get();
+
         return response()->json(['data' => $list], 200);
     }
 
@@ -952,6 +967,65 @@ class CoursesController extends Controller
         return response()->json(['error' => 'Error al eliminar al estudiante'], 500);
     }
     
+
+    /**
+     * obtiene las masterclasses para el usuario (público)
+     *
+     * @return JsonResponse
+     */
+    public function listMasterclasses(Request $request)
+    {
+        $accessToken = TokenManager::getTokenFromRequest();
+
+        if(is_null($accessToken)){
+            $list = Courses::with(['category','professors','lessons.professor','workshops.professor','custom_fields'])->where('masterclass', 1)->orderBy('id','desc')->get();
+            foreach($list as $course){
+                foreach ($course->lessons as $lesson) {
+                    $lesson->video_url = null;
+                    $lesson->zoom_meeting_id = null;
+                    $lesson->zoom_passcode = null;
+                    unset($lesson->materials);
+                }
+                foreach ($course->workshops as $workshop) {
+                    $workshop->video_url = null;
+                    $workshop->zoom_meeting_id = null;
+                    $workshop->zoom_passcode = null;
+                    unset($workshop->materials);
+                }
+            }
+        }else{
+            $user = TokenManager::getUserFromToken($accessToken);
+            $list = Courses::with(['category','professors','lessons.professor','workshops.professor','custom_fields'])
+            ->select('courses.*', 'inscriptions.id as inscribed')
+            ->leftJoin('inscriptions', function($join) use ($user) {
+                $join->on('courses.id', '=', 'inscriptions.course_id')
+                     ->where('inscriptions.user_id', $user->id);
+            })
+            ->where('courses.masterclass', 1)
+            ->orderBy('courses.id', 'desc')
+            ->get();
+
+            foreach($list as $course){
+                if(!$course->inscribed){
+                    foreach ($course->lessons as $lesson) {
+                        $lesson->video_url = null;
+                        $lesson->zoom_meeting_id = null;
+                        $lesson->zoom_passcode = null;
+                        unset($lesson->materials);
+                    }
+                    foreach ($course->workshops as $workshop) {
+                        $workshop->video_url = null;
+                        $workshop->zoom_meeting_id = null;
+                        $workshop->zoom_passcode = null;
+                        unset($workshop->materials);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['data' => $list], 200);
+    }
+
 
     /**
      * obtiene los cursos para el usuario

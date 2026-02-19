@@ -87,6 +87,10 @@ use App\Http\Controllers\HotmartDiagnosticController;
         Route::get('/{course_id}/workshops', [CoursesController::class,'listWorkshops']);
     });
 
+    Route::group(['prefix' => 'masterclasses'], function () {
+        Route::get('', [CoursesController::class,'listMasterclasses']);
+    });
+
     Route::group(['prefix' => 'exams'], function () {
         Route::get('/{exam_id}', [ExamsController::class,'showExam']);
         Route::post('/{exam_id}/submit', [ExamsController::class,'submitExam']);
@@ -150,6 +154,7 @@ use App\Http\Controllers\HotmartDiagnosticController;
 
         #create route group for masterclasses
         Route::group(['prefix' => 'masterclasses'], function () {
+            Route::get('/list', [CoursesController::class,'listAllMasterclasses'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::post('/', [CoursesController::class,'createMasterclass'])->middleware(ControlAccessMiddleware::class.':admin');
             Route::post('/{course_id}', [CoursesController::class,'updateMasterclass'])->middleware(ControlAccessMiddleware::class.':admin');
         });
