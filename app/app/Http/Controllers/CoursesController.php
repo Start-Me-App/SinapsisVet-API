@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse,CoursesCustomField,Results};
+use App\Models\{Courses, Lessons, User, Workshops,Exams,ProfessorByCourse,CoursesCustomField,Results,Materials};
 
 use Illuminate\Support\Facades\DB;
 
@@ -162,6 +162,403 @@ class CoursesController extends Controller
 
         return response()->json(['error' => 'Error al crear el curso'], 500);
 
+    }
+
+
+    /**
+     * Create masterclass (course + lesson in one request)
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function createMasterclass(Request $request)
+    {
+        $data = $request->all();
+
+        $validator = validator($data, [
+            // Course fields
+            'title' => 'required',
+            'description' => 'required',
+            'price_ars' => 'required',
+            'price_usd' => 'required',
+            'active' => 'required|integer',
+            'category_id' => 'required',
+            'photo_file' => 'required',
+            'starting_date' => 'required',
+            'inscription_date' => 'required',
+            'objective' => 'required',
+            'presentation' => 'required',
+            'professors' => 'required',
+            'academic_duration' => 'required',
+            'comission' => 'nullable|numeric',
+            'video_preview_url' => 'nullable',
+            'recorded_course' => 'nullable|boolean',
+            // Lesson fields
+            'lesson_name' => 'required',
+            'lesson_professor_id' => 'required',
+            'lesson_active' => 'nullable|integer',
+            'lesson_video_url' => 'nullable',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        #validate if course already exists
+        $course = Courses::where('title',$data['title'])->first();
+        if($course){
+            return response()->json(['error' => 'Curso ya existe'], 409);
+        }
+
+        #validate if photo is a valid image
+        if(!UploadServer::validateImage($data['photo_file'])){
+            return response()->json(['error' => 'El archivo no es una imagen'], 409);
+        }
+
+        $upload = UploadServer::uploadImage($data['photo_file'],'images');
+        if(!$upload){
+            return response()->json(['error' => 'Error al subir la imagen'], 500);
+        }
+
+        if(count($data['professors']) == 0){
+            return response()->json(['error' => 'Debe haber al menos un profesor'], 409);
+        }
+
+        #validate if starting date is greater than inscription date
+        if(strtotime($data['starting_date']) < strtotime($data['inscription_date'])){
+            return response()->json(['error' => 'La fecha de inicio no puede ser menor que la fecha de inscripcion'], 409);
+        }
+
+        if(isset($data['asociation_file'])){
+            if(!UploadServer::validateImage($data['asociation_file'])){
+                return response()->json(['error' => 'El archivo no es un archivo'], 409);
+            }
+            $upload_asociation = UploadServer::uploadImage($data['asociation_file'],'asociations');
+            if(!$upload_asociation){
+                return response()->json(['error' => 'Error al subir la imagen'], 500);
+            }
+        }else{
+            $upload_asociation = null;
+        }
+
+        #validate lesson professor
+        $lessonProfessor = User::where('id',$data['lesson_professor_id'])->where('role_id',2)->first();
+        if(!$lessonProfessor){
+            return response()->json(['error' => 'Profesor de leccion no encontrado'], 409);
+        }
+
+        $subtitle = isset($data['subtitle']) ? $data['subtitle'] : null;
+        $destined_to = isset($data['destined_to']) ? $data['destined_to'] : null;
+        $certifications = isset($data['certifications']) ? $data['certifications'] : null;
+
+        #create course with masterclass = true
+        $course = new Courses();
+        $course->title = $data['title'];
+        $course->description = $data['description'];
+        $course->price_ars = $data['price_ars'];
+        $course->price_usd = $data['price_usd'];
+        $course->active = $data['active'];
+        $course->category_id = $data['category_id'];
+        $course->photo_url = $upload;
+        $course->starting_date = $data['starting_date'];
+        $course->inscription_date = $data['inscription_date'];
+        $course->objective = $data['objective'];
+        $course->presentation = $data['presentation'];
+        $course->asociation_path = $upload_asociation;
+        $course->subtitle = $subtitle;
+        $course->destined_to = $destined_to;
+        $course->certifications = $certifications;
+        $course->academic_duration = $data['academic_duration'];
+        $course->comission = $data['comission'] ?? 100;
+        $course->video_preview_url = isset($data['video_preview_url']) ? $data['video_preview_url'] : null;
+        $course->recorded_course = isset($data['recorded_course']) ? $data['recorded_course'] : false;
+        $course->masterclass = true;
+
+        if(!$course->save()){
+            return response()->json(['error' => 'Error al crear el curso'], 500);
+        }
+
+        #create professors
+        foreach($data['professors'] as $professor_id){
+            $profesor = User::where('id',$professor_id)->where('role_id',2)->first();
+            if(!$profesor){
+                ProfessorByCourse::where('course_id',$course->id)->delete();
+                $course->delete();
+                return response()->json(['error' => 'Profesor no encontrado'], 409);
+            }
+            $professorByCourse = new ProfessorByCourse();
+            $professorByCourse->course_id = $course->id;
+            $professorByCourse->professor_id = $professor_id;
+            $professorByCourse->save();
+        }
+
+        #create custom fields if provided
+        if(isset($data['custom_fields'])){
+            $aux_custom_fields = json_decode($data['custom_fields'],true);
+            if(count($aux_custom_fields) > 0){
+                foreach($aux_custom_fields as $custom_field){
+                    $course_custom_field = new CoursesCustomField();
+                    $course_custom_field->name = $custom_field['name'];
+                    $course_custom_field->value = $custom_field['value'];
+                    $course_custom_field->course_id = $course->id;
+                    $course_custom_field->save();
+                }
+            }
+        }
+
+        #create lesson linked to this course
+        $lesson = new Lessons();
+        $lesson->course_id = $course->id;
+        $lesson->name = $data['lesson_name'];
+        $lesson->description = $data['description'];
+        $lesson->active = isset($data['lesson_active']) ? $data['lesson_active'] : 1;
+        $lesson->video_url = isset($data['lesson_video_url']) ? $data['lesson_video_url'] : null;
+        $lesson->professor_id = $lessonProfessor->id;
+        $lesson->zoom_meeting_id = 0;
+        $lesson->zoom_passcode = 0;
+
+        if(!$lesson->save()){
+            ProfessorByCourse::where('course_id',$course->id)->delete();
+            CoursesCustomField::where('course_id',$course->id)->delete();
+            $course->delete();
+            return response()->json(['error' => 'Error al crear la leccion'], 500);
+        }
+
+        #handle lesson materials
+        $materials = $request->file('lesson_materials');
+        try{
+            if ($materials) {
+                if (!is_array($materials)) {
+                    $materials = [$materials];
+                }
+                foreach ($materials as $file) {
+                    if (!$file || !$file->isValid()) {
+                        continue;
+                    }
+                    if ($file->getSize() === 0) {
+                        continue;
+                    }
+                    $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
+                    $material = new Materials();
+                    $material->lesson_id = $lesson->id;
+                    $material->file_path = $path;
+                    $material->name = $file->getClientOriginalName();
+                    $material->active = 1;
+                    $material->save();
+                }
+            }
+        }catch(\Exception $e){
+            Materials::where('lesson_id',$lesson->id)->delete();
+            $lesson->delete();
+            ProfessorByCourse::where('course_id',$course->id)->delete();
+            CoursesCustomField::where('course_id',$course->id)->delete();
+            $course->delete();
+            return response()->json(['error' => 'Error al subir los materiales', 'data' => $e->getMessage()], 500);
+        }
+
+        $course_rta = Courses::with(['professors','custom_fields','lessons.materials','lessons.professor'])->find($course->id);
+
+        return response()->json(['message' => 'Masterclass creada correctamente', 'data' => $course_rta ], 200);
+    }
+
+
+    /**
+     * Update masterclass (course + lesson in one request)
+     *
+     * @param $provider
+     * @return JsonResponse
+     */
+    public function updateMasterclass(Request $request,$course_id)
+    {
+        $data = $request->all();
+
+        $validator = validator($data, [
+            // Course fields
+            'title' => 'required',
+            'description' => 'required',
+            'price_ars' => 'required',
+            'price_usd' => 'required',
+            'active' => 'required|integer',
+            'category_id' => 'required',
+            'starting_date' => 'required',
+            'inscription_date' => 'required',
+            'objective' => 'required',
+            'presentation' => 'required',
+            'professors' => 'required',
+            'academic_duration' => 'required',
+            'comission' => 'nullable|numeric',
+            'video_preview_url' => 'nullable',
+            'recorded_course' => 'nullable|boolean',
+            // Lesson fields
+            'lesson_name' => 'required',
+            'lesson_professor_id' => 'required',
+            'lesson_active' => 'nullable|integer',
+            'lesson_video_url' => 'nullable',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        if(count($data['professors']) == 0){
+            return response()->json(['error' => 'Debe haber al menos un profesor'], 409);
+        }
+
+        #validate if course exists
+        $course = Courses::where('id',$course_id)->first();
+        if(!$course){
+            return response()->json(['error' => 'El curso no existe'], 409);
+        }
+
+        #update photo if provided
+        if(isset($data['photo_file'])){
+            if(!is_null($data['photo_file'])){
+                $upload = UploadServer::uploadImage($data['photo_file'],'images');
+                if(!$upload){
+                    return response()->json(['error' => 'Error al subir la imagen'], 500);
+                }
+                $course->photo_url = $upload;
+            }
+        }
+
+        #update asociation file if provided
+        if(isset($data['asociation_file'])){
+            if(!UploadServer::validateImage($data['asociation_file'])){
+                return response()->json(['error' => 'El archivo no es un archivo'], 409);
+            }
+            $upload = UploadServer::uploadImage($data['asociation_file'],'asociations');
+            if(!$upload){
+                return response()->json(['error' => 'Error al subir la imagen'], 500);
+            }
+            $course->asociation_path = $upload;
+        }
+
+        #validate lesson professor
+        $lessonProfessor = User::where('id',$data['lesson_professor_id'])->where('role_id',2)->first();
+        if(!$lessonProfessor){
+            return response()->json(['error' => 'Profesor de leccion no encontrado'], 409);
+        }
+
+        $subtitle = isset($data['subtitle']) ? $data['subtitle'] : null;
+        $destined_to = isset($data['destined_to']) ? $data['destined_to'] : null;
+        $certifications = isset($data['certifications']) ? $data['certifications'] : null;
+
+        #update course fields
+        $course->title = $data['title'];
+        $course->description = $data['description'];
+        $course->price_ars = $data['price_ars'];
+        $course->price_usd = $data['price_usd'];
+        $course->active = $data['active'];
+        $course->category_id = $data['category_id'];
+        $course->starting_date = $data['starting_date'];
+        $course->inscription_date = $data['inscription_date'];
+        $course->objective = $data['objective'];
+        $course->presentation = $data['presentation'];
+        $course->subtitle = $subtitle;
+        $course->destined_to = $destined_to;
+        $course->certifications = $certifications;
+        $course->academic_duration = $data['academic_duration'];
+        $course->comission = $data['comission'] ?? 100;
+        $course->video_preview_url = isset($data['video_preview_url']) ? $data['video_preview_url'] : null;
+        $course->recorded_course = isset($data['recorded_course']) ? $data['recorded_course'] : false;
+        $course->masterclass = true;
+
+        #update professors
+        foreach($data['professors'] as $professor_id){
+            $profesor = User::where('id',$professor_id)->where('role_id',2)->first();
+            if(!$profesor){
+                return response()->json(['error' => 'Profesor no encontrado'], 409);
+            }
+            $professorByCourse = ProfessorByCourse::where('course_id',$course_id)->where('professor_id',$professor_id)->first();
+            if(!$professorByCourse){
+                $professorByCourse = new ProfessorByCourse();
+                $professorByCourse->course_id = $course_id;
+                $professorByCourse->professor_id = $professor_id;
+                $professorByCourse->save();
+            }
+        }
+        ProfessorByCourse::where('course_id',$course_id)->whereNotIn('professor_id',$data['professors'])->delete();
+
+        #update custom fields
+        if(isset($data['custom_fields'])){
+            $aux_custom_fields = json_decode($data['custom_fields'],true);
+            CoursesCustomField::where('course_id',$course_id)->delete();
+            if(count($aux_custom_fields) > 0){
+                foreach($aux_custom_fields as $custom_field){
+                    $course_custom_field = new CoursesCustomField();
+                    $course_custom_field->name = $custom_field['name'];
+                    $course_custom_field->value = $custom_field['value'];
+                    $course_custom_field->course_id = $course_id;
+                    $course_custom_field->save();
+                }
+            }
+        }
+
+        if(!$course->save()){
+            return response()->json(['error' => 'Error al actualizar el curso'], 500);
+        }
+
+        #update lesson (get first lesson of this masterclass)
+        $lesson = Lessons::where('course_id',$course_id)->first();
+        if(!$lesson){
+            #create lesson if it doesn't exist
+            $lesson = new Lessons();
+            $lesson->course_id = $course_id;
+        }
+
+        $lesson->name = $data['lesson_name'];
+        $lesson->description = $data['description'];
+        $lesson->active = isset($data['lesson_active']) ? $data['lesson_active'] : 1;
+        $lesson->video_url = isset($data['lesson_video_url']) ? $data['lesson_video_url'] : null;
+        $lesson->professor_id = $lessonProfessor->id;
+        $lesson->zoom_meeting_id = 0;
+        $lesson->zoom_passcode = 0;
+
+        if(!$lesson->save()){
+            return response()->json(['error' => 'Error al actualizar la leccion'], 500);
+        }
+
+        #handle lesson materials
+        $new_materials = $request->file('lesson_new_materials');
+        $existing_materials = $request->input('lesson_materials');
+        $array_ids = [];
+
+        if ($new_materials) {
+            try{
+                if (!is_array($new_materials)) {
+                    $new_materials = [$new_materials];
+                }
+                foreach ($new_materials as $file) {
+                    if (!$file || !$file->isValid()) {
+                        continue;
+                    }
+                    if ($file->getSize() === 0) {
+                        continue;
+                    }
+                    $path = UploadServer::uploadFile($file,'lessons/'. $lesson->id.'/materials');
+                    $material = new Materials();
+                    $material->lesson_id = $lesson->id;
+                    $material->file_path = $path;
+                    $material->name = $file->getClientOriginalName();
+                    $material->active = 1;
+                    $material->save();
+                    $array_ids[] = $material->id;
+                }
+            }catch(\Exception $e){
+                return response()->json(['error' => 'Error al subir los materiales', 'data' => $e->getMessage()], 500);
+            }
+        }
+
+        if($existing_materials){
+            foreach($existing_materials as $material){
+                $array_ids[] = $material['id'];
+            }
+        }
+        Materials::where('lesson_id',$lesson->id)->whereNotIn('id',$array_ids)->delete();
+
+        $course_rta = Courses::with(['professors','custom_fields','lessons.materials','lessons.professor'])->find($course->id);
+
+        return response()->json(['message' => 'Masterclass actualizada correctamente', 'data' => $course_rta ], 200);
     }
 
 

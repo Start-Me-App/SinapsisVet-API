@@ -135,6 +135,12 @@ use App\Http\Controllers\AccountsController;
         });
 
 
+        #create route group for masterclasses
+        Route::group(['prefix' => 'masterclasses'], function () {
+            Route::post('/', [CoursesController::class,'createMasterclass'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::post('/{course_id}', [CoursesController::class,'updateMasterclass'])->middleware(ControlAccessMiddleware::class.':admin');
+        });
+
         #create route group for lessons
         Route::group(['prefix' => 'lessons'], function () {
             Route::post('/', [LessonsController::class,'create'])->middleware(ControlAccessMiddleware::class.':admin');
