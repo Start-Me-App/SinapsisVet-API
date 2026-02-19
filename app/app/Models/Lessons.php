@@ -61,4 +61,21 @@ class Lessons extends Model
     {
         return $this->hasOne(Exams::class, 'lesson_id', 'id');
     }
+
+    /**
+     * Relación con las vistas/asistencias de la lección
+     */
+    public function attendances()
+    {
+        return $this->hasMany(ViewLesson::class, 'lesson_id', 'id');
+    }
+
+    /**
+     * Relación con los usuarios que vieron la lección (muchos a muchos a través de view_lesson)
+     */
+    public function attendees()
+    {
+        return $this->belongsToMany(User::class, 'view_lesson', 'lesson_id', 'user_id')
+                    ->withTimestamps();
+    }
 }

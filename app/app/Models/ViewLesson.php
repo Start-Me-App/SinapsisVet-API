@@ -32,6 +32,20 @@ class ViewLesson extends Model
         'user_id',
         'lesson_id'
     ];
-   
- 
+
+    /**
+     * Relación con la lección
+     */
+    public function lesson()
+    {
+        return $this->belongsTo(Lessons::class, 'lesson_id');
+    }
+
+    /**
+     * Relación con el usuario
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

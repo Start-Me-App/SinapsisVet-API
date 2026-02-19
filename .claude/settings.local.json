@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan:*)",
+      "WebFetch(domain:developers.hotmart.com)",
+      "Bash(composer dump-autoload:*)"
+    ]
+  }
+}
