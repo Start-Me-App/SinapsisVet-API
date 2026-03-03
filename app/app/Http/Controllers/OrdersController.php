@@ -732,7 +732,7 @@ class OrdersController extends Controller
                         1 => 'MercadoPago',
                         2 => 'Transferencia',
                         3 => 'Stripe',
-                        4 => 'Efectivo'
+                        4 => 'Hotmart'
                     ];
 
                     return $methods[$paymentMethodId] ?? 'Desconocido';

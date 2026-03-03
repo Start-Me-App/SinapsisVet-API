@@ -312,31 +312,32 @@ class ShoppingCartController extends Controller
        #obtengo el total de la orden
        $total = OrderDetail::where('order_id', $order->id)->sum('price');
 
-       if($discount_percentage > 0){
-        $total = $total - ($total * $discount_percentage / 100);
-       }
+       if($paymentMethodId != 4){
+           if($discount_percentage > 0){
+            $total = $total - ($total * $discount_percentage / 100);
+           }
 
+           if($discount_amount_usd > 0 && $paymentMethodId == 3){
 
-       if($discount_amount_usd > 0 && $paymentMethodId == 3){
+            if($discount_amount_usd > $total){
+                throw new \Exception('El descuento es mayor al total de la orden');
+            }
 
-        if($discount_amount_usd > $total){
-            throw new \Exception('El descuento es mayor al total de la orden');
-        }
+            $total = $total - $discount_amount_usd;
+           }
 
-        $total = $total - $discount_amount_usd;
-       }
+           if($discount_amount_ars > 0 && ( $paymentMethodId == 1 || $paymentMethodId == 2 )){
 
-       if($discount_amount_ars > 0 && ( $paymentMethodId == 1 || $paymentMethodId == 2 )){
+            if($discount_amount_ars > $total){
+                throw new \Exception('El descuento es mayor al total de la orden');
+            }
 
-        if($discount_amount_ars > $total){
-            throw new \Exception('El descuento es mayor al total de la orden');
-        }
+            $total = $total - $discount_amount_ars;
+           }
 
-        $total = $total - $discount_amount_ars;
-       }
-
-       if($discount_percentage_coupon > 0){
-        $total = $total - ($total * $discount_percentage_coupon / 100);
+           if($discount_percentage_coupon > 0){
+            $total = $total - ($total * $discount_percentage_coupon / 100);
+           }
        }
 
        
@@ -379,7 +380,7 @@ class ShoppingCartController extends Controller
 
         $shoppingCart->active = 0;
         $shoppingCart->save();
-
+#TODO eliminar descuento si es mascterclass
         $order->coupon_code = $coupon_code;
         if($paymentMethodId == 1 || $paymentMethodId == 2){
             $order->total_amount_usd = null;
