@@ -369,20 +369,19 @@ class ShoppingCartController extends Controller
             $client_secret = $paymentIntent->createPaymentIntent(floatval($total),$user->id,$order->id);
             $preference = null;
             break;
-        case 4: #suscripción Stripe
-            $subscription = new SubscriptionController();
-            $client_secret = null;
-            $subscription_id = $subscription->createSubscription(floatval($total), $user->id, $order->id);
+        case 4: #Hotmart not automatic
             $preference = null;
+            $client_secret = null;
             break;
        }
      
 
         $shoppingCart->active = 0;
         $shoppingCart->save();
-#TODO eliminar descuento si es mascterclass
+
+
         $order->coupon_code = $coupon_code;
-        if($paymentMethodId == 1 || $paymentMethodId == 2){
+        if($paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 4){ #Si es mercado pago, transferencia o hotmart se guarda el total en ARS
             $order->total_amount_usd = null;
             $order->total_amount_ars = $total;
         }else{
@@ -401,7 +400,7 @@ class ShoppingCartController extends Controller
         }
 
 
-        if($paymentMethodId == 2){
+        if($paymentMethodId == 2 || $paymentMethodId == 4){ #Si es transferencia o hotmart
             $order = Order::with(['orderDetails.course'])->find($order->id);
             OrdenDeCompraEmail::sendOrderEmail($order);
         }
