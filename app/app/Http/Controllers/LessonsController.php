@@ -419,6 +419,7 @@ class LessonsController extends Controller
                 return [
                     'user_id' => $inscription->user_id,
                     'name' => $inscription->student->name ?? 'N/A',
+                    'lastname' => $inscription->student->lastname ?? 'N/A',
                     'email' => $inscription->student->email ?? 'N/A',
                     'phone' => $inscription->student->telephone ?? 'N/A',
                     'has_attendance' => $hasAttendance,
