@@ -395,7 +395,7 @@ class LessonsController extends Controller
             }
 
             // Obtener todos los usuarios inscritos en el curso
-            $inscriptions = Inscriptions::with('student:id,name,email,telephone')
+            $inscriptions = Inscriptions::with('student:id,name,lastname,email,telephone')
                 ->where('course_id', $lesson->course_id)
                 ->get();
 
