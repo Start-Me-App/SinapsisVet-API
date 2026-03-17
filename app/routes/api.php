@@ -91,8 +91,21 @@ use App\Http\Controllers\HotmartDiagnosticController;
         Route::get('', [CoursesController::class,'listMasterclasses']);
     });
 
-    Route::get('/professor/my-courses', [CoursesController::class,'getMyCourses'])->middleware(ControlAccessMiddleware::class.':professor');
 
+     #create route group for admin
+    Route::group(['prefix' => 'professor'], function () {
+        
+        Route::group(['prefix' => 'lessons'], function () {
+            Route::get('/{lesson_id}', [LessonsController::class,'getLesson'])->middleware(ControlAccessMiddleware::class.':admin');
+
+            // Rutas de gestión de asistencias (solo admin)
+            Route::get('/{lesson_id}/eligible-students', [LessonsController::class,'getEligibleStudents'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
+            Route::post('/{lesson_id}/attendance', [LessonsController::class,'markAttendance'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
+            Route::post('/{lesson_id}/attendance/multiple', [LessonsController::class,'markMultipleAttendances'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
+            Route::delete('/{lesson_id}/attendance/{user_id}', [LessonsController::class,'removeAttendance'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
+        });
+    Route::get('/my-courses', [CoursesController::class,'getMyCourses'])->middleware(ControlAccessMiddleware::class.':professor');
+    }); 
     Route::group(['prefix' => 'exams'], function () {
         Route::get('/{exam_id}', [ExamsController::class,'showExam']);
         Route::post('/{exam_id}/submit', [ExamsController::class,'submitExam']);
