@@ -99,10 +99,10 @@ use App\Http\Controllers\HotmartDiagnosticController;
             Route::get('/{lesson_id}', [LessonsController::class,'getLesson'])->middleware(ControlAccessMiddleware::class.':admin');
 
             // Rutas de gestión de asistencias (solo admin)
-            Route::get('/{lesson_id}/eligible-students', [LessonsController::class,'getEligibleStudents'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
-            Route::post('/{lesson_id}/attendance', [LessonsController::class,'markAttendance'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
-            Route::post('/{lesson_id}/attendance/multiple', [LessonsController::class,'markMultipleAttendances'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
-            Route::delete('/{lesson_id}/attendance/{user_id}', [LessonsController::class,'removeAttendance'])->middleware(ControlAccessMiddleware::class.':admin,:professor');
+            Route::get('/{lesson_id}/eligible-students', [LessonsController::class,'getEligibleStudents'])->middleware(ControlAccessMiddleware::class.':professor');
+            Route::post('/{lesson_id}/attendance', [LessonsController::class,'markAttendance'])->middleware(ControlAccessMiddleware::class.':professor');
+            Route::post('/{lesson_id}/attendance/multiple', [LessonsController::class,'markMultipleAttendances'])->middleware(ControlAccessMiddleware::class.':professor');
+            Route::delete('/{lesson_id}/attendance/{user_id}', [LessonsController::class,'removeAttendance'])->middleware(ControlAccessMiddleware::class.':professor');
         });
     Route::get('/my-courses', [CoursesController::class,'getMyCourses'])->middleware(ControlAccessMiddleware::class.':professor');
     }); 
