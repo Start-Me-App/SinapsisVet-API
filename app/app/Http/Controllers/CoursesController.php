@@ -1318,13 +1318,42 @@ class CoursesController extends Controller
             }
           
             $list = Workshops::with(['materials','professor'])->where('course_id',$course_id)->where('active',1)->get();
-      
+
             return response()->json(['data' => $list], 200);
         }
     }
-    
+
+
+    /**
+     * Obtiene los cursos que dicta el profesor logeado
+     *
+     * @return JsonResponse
+     */
+    public function getMyCourses(Request $request)
+    {
+        $accessToken = TokenManager::getTokenFromRequest();
+
+        if (is_null($accessToken)) {
+            return response()->json(['error' => 'No autorizado'], 401);
+        }
+
+        $user = TokenManager::getUserFromToken($accessToken);
+
+        if (!$user || $user->role_id != 2) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $courses = Courses::with(['category', 'professors', 'custom_fields'])
+            ->whereHas('professors', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json(['data' => $courses], 200);
+    }
 
 
 
-    
+
 }
