@@ -1348,7 +1348,7 @@ class CoursesController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        $courses = Courses::with(['category', 'professors', 'custom_fields'])
+        $courses = Courses::with(['category', 'professors', 'custom_fields', 'lessons'])
             ->whereHas('professors', function ($query) use ($user) {
                 $query->where('users.id', $user->id);
             })
