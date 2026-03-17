@@ -96,7 +96,7 @@ use App\Http\Controllers\HotmartDiagnosticController;
     Route::group(['prefix' => 'professor'], function () {
         
         Route::group(['prefix' => 'lessons'], function () {
-            Route::get('/{lesson_id}', [LessonsController::class,'getLesson'])->middleware(ControlAccessMiddleware::class.':admin');
+            Route::get('/{lesson_id}', [LessonsController::class,'getLesson'])->middleware(ControlAccessMiddleware::class.':professor');
 
             // Rutas de gestión de asistencias (solo admin)
             Route::get('/{lesson_id}/eligible-students', [LessonsController::class,'getEligibleStudents'])->middleware(ControlAccessMiddleware::class.':professor');
