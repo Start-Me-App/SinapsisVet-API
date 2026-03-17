@@ -1339,7 +1339,12 @@ class CoursesController extends Controller
 
         $user = TokenManager::getUserFromToken($accessToken);
 
-        if (!$user || $user->role_id != 2) {
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado'], 401);
+        }
+
+
+        if ($user->role->id != 2) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
