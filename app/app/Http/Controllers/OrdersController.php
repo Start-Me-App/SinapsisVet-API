@@ -58,7 +58,7 @@ class OrdersController extends Controller
 
         $order = Order::find($order_id);
 
-        if($order->payment_method_id == 2 ){  
+        if($order->payment_method_id == 2 || $order->payment_method_id == 4){  
             if($order->status != 'pending'){
                 return response()->json(['error' => 'La orden ya fue procesada'], 500);
             }
@@ -154,7 +154,7 @@ class OrdersController extends Controller
             $order->date_closed = date('Y-m-d H:i:s');
             $order->save();
         }else{
-            return response()->json(['error' => 'El pago no se pudo procesar, solo es posible con transferencia'], 500);
+            return response()->json(['error' => 'El pago no se pudo procesar, solo es posible con transferencia o hotmart'], 500);
         }
         return response()->json(['order' => $order], 200);
     }
@@ -164,12 +164,12 @@ class OrdersController extends Controller
     {
         $order = Order::find($order_id);
 
-        if($order->payment_method_id == 2){
+        if($order->payment_method_id == 2 || $order->payment_method_id == 4){
             if($order->status != 'pending'){
                 return response()->json(['error' => 'La orden ya fue procesada'], 500);
             }
         }else{
-            return response()->json(['error' => 'El pago no se pudo procesar, solo es posible con transferencia'], 500);
+            return response()->json(['error' => 'El pago no se pudo procesar, solo es posible con transferencia o hotmart'], 500);
         }
 
         $order->status = 'rejected';
