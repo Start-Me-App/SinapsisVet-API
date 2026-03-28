@@ -47,7 +47,9 @@ return [
     ],
     'telegram' => [
     'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-    'chat_id' => env('TELEGRAM_CHAT_ID'), // Opcional, puedes especificar el chat_id aquí o dinámicamente en la notificación
+    'chat_id_tetu' => env('TELEGRAM_CHAT_ID_TETU'),
+    'chat_id_feta' => env('TELEGRAM_CHAT_ID_FETA'),
+    'chat_id_ciro' => env('TELEGRAM_CHAT_ID_CIRO'),
 ],
 
 ];
