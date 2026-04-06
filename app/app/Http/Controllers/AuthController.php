@@ -95,7 +95,7 @@ class Authcontroller extends Controller
         $userCreated = User::with(['role'])->where('email', $params['email'])->first();
 
 
-        Emailing::verifyEmail($userCreated);
+        #Emailing::verifyEmail($userCreated);
 
         return response()->json(['msg' => 'Usuario creado con éxito'], 200);
 
@@ -410,7 +410,7 @@ class Authcontroller extends Controller
             return response()->json(['error' => 'Email no registrado'], 400);
         }
 
-        Emailing::verifyEmail($user);
+       # Emailing::verifyEmail($user);
        
         return response()->json(['msg' => 'Email reenviado'], 200);
     }
