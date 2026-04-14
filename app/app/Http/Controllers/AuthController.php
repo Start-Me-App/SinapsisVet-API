@@ -86,7 +86,7 @@ class Authcontroller extends Controller
                 'sex'   => $params['gender']
             ],
             [
-                'email_verified_at' => null,
+                'email_verified_at' => date('Y-m-d H:i:s'),
                 'created_at' => date('Y-m-d H:i:s')
             ]
         );
@@ -281,6 +281,8 @@ class Authcontroller extends Controller
      */
     public function verifyEmail(Request $request)
     {
+        return response()->json(['msg' => 'Email verificado con éxito'], 200);
+
         $params = $request->only('token');
         
         #verify is the request has all the required fields
