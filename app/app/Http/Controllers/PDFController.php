@@ -104,7 +104,8 @@ class PDFController extends Controller
             'student' => $student->name .' '.$student->lastname,
             'course_data' => $course->description,
             'type' => 'asistido',
-            'academic_duration' => $course->academic_duration
+            'academic_duration' => $course->academic_duration,
+            'professor' => $course->professors->first()->name.' '.$course->professors->first()->lastname
         ];
 
         return $data;
