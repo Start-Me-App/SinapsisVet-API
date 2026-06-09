@@ -45,6 +45,12 @@ return [
     'secret' => env('STRIPE_SECRET'),
     'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
+    'dlocalgo' => [
+    'api_key' => env('DLOCALGO_API_KEY'),
+    'api_secret' => env('DLOCALGO_API_SECRET'),
+    'base_url' => env('DLOCALGO_BASE_URL', 'https://api.dlocalgo.com'),
+    'webhook_path' => env('DLOCALGO_WEBHOOK_PATH', '/api/dlocal/webhook'),
+    ],
     'telegram' => [
     'bot_token' => env('TELEGRAM_BOT_TOKEN'),
     'chat_id_tetu' => env('TELEGRAM_CHAT_ID_TETU'),

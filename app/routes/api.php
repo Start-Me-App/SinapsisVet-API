@@ -23,6 +23,7 @@ use App\Http\Controllers\MovementsController;
 use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\HotmartController;
 use App\Http\Controllers\HotmartDiagnosticController;
+use App\Http\Controllers\DLocal\{CheckoutDLocal, WebhookDLocal};
 
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
@@ -72,6 +73,10 @@ use App\Http\Controllers\HotmartDiagnosticController;
     Route::get('/hotmart/generate-basic-auth', [HotmartDiagnosticController::class,'generateBasicAuth']);
     Route::get('/hotmart/subscription/{subscriber_code}', [HotmartController::class,'getSubscription']);
     Route::get('/hotmart/sales', [HotmartController::class,'getSalesHistory']);
+
+    #dlocal go
+    Route::post('/dlocal/processPayment', [CheckoutDLocal::class,'processPayment']);
+    Route::post('/dlocal/webhook', [WebhookDLocal::class,'notification']);
 
 
     Route::post('/cleanUpOrders', [OrdersController::class,'cleanUpOrders']);

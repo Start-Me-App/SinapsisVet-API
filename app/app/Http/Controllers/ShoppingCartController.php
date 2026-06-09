@@ -16,6 +16,7 @@ use App\Support\TokenManager;
 use App\Http\Controllers\MercadoPago\CheckoutPro;
 use App\Http\Controllers\Stripe\PaymentIntentController;
 use App\Http\Controllers\Stripe\SubscriptionController;
+use App\Http\Controllers\DLocal\CheckoutDLocal;
 use App\Helper\TelegramNotification;
 
 class ShoppingCartController extends Controller
@@ -267,7 +268,7 @@ class ShoppingCartController extends Controller
                    $orderDetail = new OrderDetail();
                    $orderDetail->order_id = $order->id;
                    $orderDetail->course_id = $item->course_id;
-                   if($paymentMethodId == 1 || $paymentMethodId == 2){
+                   if($paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 6){
                     $orderDetail->price = env('WORKSHOP_PRICE_ARS');
                    }else{
                     $orderDetail->price = env('WORKSHOP_PRICE_USD');
@@ -284,7 +285,7 @@ class ShoppingCartController extends Controller
                $orderDetail->with_workshop = $item->with_workshop;
                
                if($item->with_workshop == 1){
-                   if($paymentMethodId == 1 || $paymentMethodId == 2){
+                   if($paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 6){
                     $price = $item->course->price_ars;
                     $price = $price + env('WORKSHOP_PRICE_ARS');
                    }else{
@@ -292,7 +293,7 @@ class ShoppingCartController extends Controller
                     $price = $price + env('WORKSHOP_PRICE_USD');
                    }
                }else{
-                if($paymentMethodId == 1 || $paymentMethodId == 2){
+                if($paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 6){
                     $price = $item->course->price_ars;
                 }else{
                     $price = $item->course->price_usd;
@@ -326,7 +327,7 @@ class ShoppingCartController extends Controller
             $total = $total - $discount_amount_usd;
            }
 
-           if($discount_amount_ars > 0 && ( $paymentMethodId == 1 || $paymentMethodId == 2 )){
+           if($discount_amount_ars > 0 && ( $paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 6 )){
 
             if($discount_amount_ars > $total){
                 throw new \Exception('El descuento es mayor al total de la orden');
@@ -347,6 +348,7 @@ class ShoppingCartController extends Controller
         throw new \Exception('El total de la orden es menor a 0');
        }    
      
+       $redirect_url = null;
        switch($paymentMethodId){
         case 1: #Mercado Pago
                 #creo la preferencia de pago
@@ -373,6 +375,19 @@ class ShoppingCartController extends Controller
             $preference = null;
             $client_secret = null;
             break;
+        case 6: #dLocal Go
+            $preference = null;
+            $client_secret = null;
+            $checkoutDLocal = new CheckoutDLocal();
+            // Etapa 1: cobro en ARS para Argentina. La moneda local dinámica (FX)
+            // se sumará junto con el servicio de cotización.
+            $redirect_url = $checkoutDLocal->processPayment(floatval($total), $user->id, $order->id, 'ARS', 'AR');
+            if(!$redirect_url){
+                OrderDetail::where('order_id', $order->id)->delete();
+                $order->delete();
+                return response()->json(['message' => 'No se pudo iniciar el pago con dLocal'], 500);
+            }
+            break;
        }
      
 
@@ -381,7 +396,7 @@ class ShoppingCartController extends Controller
 
 
         $order->coupon_code = $coupon_code;
-        if($paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 4){ #Si es mercado pago, transferencia o hotmart se guarda el total en ARS
+        if($paymentMethodId == 1 || $paymentMethodId == 2 || $paymentMethodId == 4 || $paymentMethodId == 6){ #Si es mercado pago, transferencia, hotmart o dLocal (Etapa 1 ARS) se guarda el total en ARS
             $order->total_amount_usd = null;
             $order->total_amount_ars = $total;
         }else{
@@ -416,7 +431,7 @@ class ShoppingCartController extends Controller
         return response()->json(['message' => $e->getMessage()], 500);
     }
 
-        return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order, 'client_secret' => $client_secret], 200);
+        return response()->json(['msg' => 'Carrito procesado correctamente', 'preference_id' => $preference, 'order' => $order, 'client_secret' => $client_secret, 'redirect_url' => $redirect_url], 200);
 
     }
 
