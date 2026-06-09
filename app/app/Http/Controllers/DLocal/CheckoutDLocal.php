@@ -45,8 +45,8 @@ class CheckoutDLocal extends Controller
                 'country' => $country,
                 'order_id' => (string) $orderId,
                 'notification_url' => DLocalGo::getWebhookUrl(),
-                'success_url' => rtrim(env('URL_WEB', env('FRONT_URL')), '/') . '/checkout',
-                'back_url' => rtrim(env('URL_WEB', env('FRONT_URL')), '/') . '/checkout',
+                'success_url' => rtrim(env('URL_WEB', env('FRONT_URL')), '/') . '/checkout?status=approved&payment_method=dlocal&order_id=' . $orderId,
+                'back_url'    => rtrim(env('URL_WEB', env('FRONT_URL')), '/') . '/checkout?status=cancelled&payment_method=dlocal&order_id=' . $orderId,
                 'payer' => [
                     'name' => $user->name ?? '',
                     'email' => $user->email ?? '',
