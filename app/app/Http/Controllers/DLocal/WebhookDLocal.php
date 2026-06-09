@@ -10,6 +10,7 @@ use App\Models\Inscriptions;
 use App\Models\Movements;
 use App\Models\Courses;
 use App\Support\DLocalGo;
+use App\Support\ExchangeRate;
 use App\Support\Email\OrdenDeCompraEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -70,6 +71,21 @@ class WebhookDLocal extends Controller
                 $responseDLocal->status = $status;
                 if ($status === DLocalGo::STATUS_PAID) {
                     $responseDLocal->approved_at = date('Y-m-d H:i:s');
+
+                    // Obtener balance_amount y balance_fee desde dLocal y convertir a ARS
+                    $paymentIdToFetch = $paymentId ?? $responseDLocal->payment_id;
+                    if ($paymentIdToFetch) {
+                        $detail = DLocalGo::getInstance()->getPayment((string) $paymentIdToFetch);
+                        if ($detail['success'] && !empty($detail['data'])) {
+                            $netUsd  = (float) ($detail['data']['balance_amount'] ?? 0);
+                            $feeUsd  = (float) ($detail['data']['balance_fee'] ?? 0);
+                            $rate    = ExchangeRate::usdToArs();
+                            $responseDLocal->fee_usd        = $feeUsd ?: null;
+                            $responseDLocal->net_amount_usd = $netUsd ?: null;
+                            $responseDLocal->exchange_rate  = $rate;
+                            $responseDLocal->net_amount_ars = ($netUsd && $rate) ? round($netUsd * $rate, 2) : null;
+                        }
+                    }
                 }
                 $responseDLocal->save();
                 $orderId = $orderId ?: $responseDLocal->order_id;
@@ -149,6 +165,11 @@ class WebhookDLocal extends Controller
         $totalConDescuento = max(0, $totalConDescuento);
         $factorDescuento = $totalOriginal > 0 ? $totalConDescuento / $totalOriginal : 0;
 
+        // Factor neto: proporción de lo acreditado por dLocal vs el total cobrado.
+        // Si tenemos net_amount_ars lo usamos; si no, fallback al monto bruto.
+        $totalNetoArs = $responseDLocal?->net_amount_ars ?? $totalConDescuento;
+        $factorNeto = $totalConDescuento > 0 ? $totalNetoArs / $totalConDescuento : 1;
+
         foreach ($orderDetail as $item) {
             $course = Courses::find($item->course_id);
 
@@ -158,13 +179,13 @@ class WebhookDLocal extends Controller
                 $movement = new Movements();
                 $precioConDescuento = $item->price * $factorDescuento;
 
-                $movement->amount = $precioConDescuento;
-                $movement->amount_neto = $precioConDescuento; // TODO: descontar comisión dLocal real
-                $movement->currency = $isUsd ? 1 : 2; // 1 = USD, 2 = ARS
+                $movement->amount      = $precioConDescuento;
+                $movement->amount_neto = round($precioConDescuento * $factorNeto, 2);
+                $movement->currency    = $isUsd ? 1 : 2; // 1 = USD, 2 = ARS
                 $movement->description = $description;
-                $movement->course_id = $item->course_id;
-                $movement->period = date('m-Y');
-                $movement->account_id = self::ACCOUNT_ID_DLOCAL;
+                $movement->course_id   = $item->course_id;
+                $movement->period      = date('m-Y');
+                $movement->account_id  = self::ACCOUNT_ID_DLOCAL;
                 $movement->save();
             }
         }

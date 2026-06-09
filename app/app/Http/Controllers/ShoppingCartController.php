@@ -183,6 +183,9 @@ class ShoppingCartController extends Controller
         }
 
         $paymentMethodId = $request->input('paymentMethodId');
+        $installments    = (int) $request->input('installments', 1);
+        $paymentType     = $request->input('payment_type');     // CREDIT_CARD | BANK_TRANSFER,DEBIT_CARD | null
+        $feeRate         = (float) $request->input('fee_rate', 0); // ej: -0.05, 0, 0.05, 0.10, 0.20
        
        foreach ($shoppingCart->items as $item) {
 
@@ -346,8 +349,13 @@ class ShoppingCartController extends Controller
 
        if($total < 0){
         throw new \Exception('El total de la orden es menor a 0');
-       }    
-     
+       }
+
+       // Aplicar fee de cuotas dLocal (lo absorbe el comprador)
+       if($paymentMethodId == 6 && $feeRate != 0){
+           $total = round($total * (1 + $feeRate));
+       }
+
        $redirect_url = null;
        switch($paymentMethodId){
         case 1: #Mercado Pago
@@ -379,9 +387,10 @@ class ShoppingCartController extends Controller
             $preference = null;
             $client_secret = null;
             $checkoutDLocal = new CheckoutDLocal();
-            // Etapa 1: cobro en ARS para Argentina. La moneda local dinámica (FX)
-            // se sumará junto con el servicio de cotización.
-            $redirect_url = $checkoutDLocal->processPayment(floatval($total), $user->id, $order->id, 'ARS', 'AR');
+            $redirect_url = $checkoutDLocal->processPayment(
+                floatval($total), $user->id, $order->id, 'ARS', 'AR',
+                $installments, $paymentType, $feeRate
+            );
             if(!$redirect_url){
                 OrderDetail::where('order_id', $order->id)->delete();
                 $order->delete();
@@ -407,6 +416,7 @@ class ShoppingCartController extends Controller
         $order->discount_amount_usd = $discount_amount_usd;
         $order->discount_amount_ars = $discount_amount_ars;
         $order->discount_percentage_coupon = $discount_percentage_coupon;
+        $order->installments = ($paymentMethodId == 6) ? $installments : null;
         $order->save();
 
         if($coupon_code){

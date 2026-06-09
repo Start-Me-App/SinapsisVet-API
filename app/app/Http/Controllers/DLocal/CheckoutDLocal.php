@@ -24,34 +24,52 @@ use Illuminate\Support\Facades\Log;
 class CheckoutDLocal extends Controller
 {
     /**
-     * @param float  $total     Monto final a cobrar (ya con descuento/recargo).
-     * @param int    $userId
-     * @param int    $orderId
-     * @param string $currency  Moneda local a cobrar (ARS, USD, ...).
-     * @param string $country   Código de país ISO (AR por defecto).
-     * @return string|null      redirect_url del checkout, o null si falló.
+     * @param float       $total        Monto final a cobrar (ya con fee de cuotas incluido).
+     * @param int         $userId
+     * @param int         $orderId
+     * @param string      $currency     Moneda local (ARS por defecto).
+     * @param string      $country      Código de país ISO (AR por defecto).
+     * @param int         $installments Cantidad de cuotas (1 = pago único).
+     * @param string|null $paymentType  CREDIT_CARD | BANK_TRANSFER,DEBIT_CARD | null
+     * @param float       $feeRate      Factor aplicado al total (-0.05, 0, 0.05, etc.)
+     * @return string|null redirect_url del checkout, o null si falló.
      */
-    public function processPayment($total, $userId, $orderId, string $currency = 'ARS', string $country = 'AR')
-    {
+    public function processPayment(
+        $total, $userId, $orderId,
+        string $currency = 'ARS', string $country = 'AR',
+        int $installments = 1, ?string $paymentType = null, float $feeRate = 0
+    ) {
         try {
             $user = User::find($userId);
 
             $dlocal = DLocalGo::getInstance();
 
-            // TODO (sandbox): confirmar nombres de campos exactos del payload de dLocal Go.
+            $baseUrl = rtrim(env('URL_WEB', env('FRONT_URL')), '/');
+            $successUrl = $baseUrl . '/checkout?status=approved&payment_method=dlocal&order_id=' . $orderId
+                . '&installments=' . $installments
+                . ($feeRate != 0 ? '&fee_rate=' . $feeRate : '');
+
             $payload = [
-                'amount' => floatval($total),
-                'currency' => $currency,
-                'country' => $country,
-                'order_id' => (string) $orderId,
+                'amount'           => floatval($total),
+                'currency'         => $currency,
+                'country'          => $country,
+                'order_id'         => (string) $orderId,
                 'notification_url' => DLocalGo::getWebhookUrl(),
-                'success_url' => rtrim(env('URL_WEB', env('FRONT_URL')), '/') . '/checkout?status=approved&payment_method=dlocal&order_id=' . $orderId,
-                'back_url'    => rtrim(env('URL_WEB', env('FRONT_URL')), '/') . '/checkout?status=cancelled&payment_method=dlocal&order_id=' . $orderId,
+                'success_url'      => $successUrl,
+                'back_url'         => $baseUrl . '/checkout?status=cancelled&payment_method=dlocal&order_id=' . $orderId,
+                'error_url'        => $baseUrl . '/checkout?status=error&payment_method=dlocal&order_id=' . $orderId,
                 'payer' => [
-                    'name' => $user->name ?? '',
+                    'name'  => $user->name ?? '',
                     'email' => $user->email ?? '',
                 ],
             ];
+
+            if ($installments > 1) {
+                $payload['max_installments'] = $installments;
+            }
+            if ($paymentType) {
+                $payload['payment_type'] = $paymentType;
+            }
 
             $result = $dlocal->createPayment($payload);
 
