@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('order', 'installments')) {
+            return;
+        }
         Schema::table('order', function (Blueprint $table) {
             $table->integer('installments')->default(1)->after('discount_percentage_coupon');
         });
