@@ -41,6 +41,10 @@ class CheckoutDLocal extends Controller
         ?int $expirationDays = null
     ) {
         try {
+            if (floatval($total) <= 0) {
+                throw new \Exception('El monto del pago dLocal debe ser mayor a 0 (recibido: ' . $total . ')');
+            }
+
             $user = User::find($userId);
 
             $dlocal = DLocalGo::getInstance();
@@ -146,6 +150,10 @@ class CheckoutDLocal extends Controller
         string $currency = 'ARS', string $country = 'AR'
     ) {
         try {
+            if (floatval($total) <= 0 || $installments < 1) {
+                throw new \Exception('Monto o cuotas inválidos para la suscripción dLocal (total: ' . $total . ', cuotas: ' . $installments . ')');
+            }
+
             $dlocal = DLocalGo::getInstance();
 
             // monto por cuota = total / N (sin interés)
@@ -162,6 +170,7 @@ class CheckoutDLocal extends Controller
                 'frequency_type'   => 'MONTHLY',
                 'frequency_value'  => 1,
                 'max_periods'      => $installments, // dLocal corta solo al llegar a N cobros
+                'external_id'      => (string) $orderId, // para mapear los cobros de la suscripción a nuestra orden
                 'notification_url' => DLocalGo::getWebhookUrl(),
                 'success_url'      => $baseUrl . '/checkout?status=approved&payment_method=dlocal&order_id=' . $orderId . '&installments=' . $installments,
                 'back_url'         => $baseUrl . '/checkout?status=cancelled&payment_method=dlocal&order_id=' . $orderId,

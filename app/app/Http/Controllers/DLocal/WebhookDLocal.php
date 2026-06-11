@@ -46,27 +46,41 @@ class WebhookDLocal extends Controller
                 return response()->json(['error' => 'Webhook inválido'], 400);
             }
 
-            // dLocal Go notifica solo { "payment_id": "DP-..." }. Hay que hacer retrieve
-            // para obtener order_id y status reales.
-            $paymentId = $payload['payment_id'] ?? null;
-            $orderId = null;
-            $status = '';
+            // El webhook real de dLocal Go trae { "id": "DP-...", "order_id": "..", "status": ".." }.
+            // (Algunos casos traen solo { "payment_id": "DP-..." }; contemplamos ambos.)
+            $paymentId = $payload['id'] ?? ($payload['payment_id'] ?? null);
+            $orderId   = $payload['order_id'] ?? null;
+            $status    = strtoupper((string) ($payload['status'] ?? ''));
 
-            if ($paymentId) {
+            // Si faltan order_id o status, consultamos el pago en dLocal.
+            // En cobros de SUSCRIPCIÓN, el order_id que llega es el id de la ejecución
+            // (ej. "ST-...-0"), NO nuestro order_id; el nuestro viaja en external_id.
+            $externalId = null;
+            if ($paymentId && (!$orderId || !$status || !is_numeric($orderId))) {
                 $fetched = DLocalGo::getInstance()->getPayment((string) $paymentId);
                 if ($fetched['success'] && !empty($fetched['data'])) {
-                    $orderId = $fetched['data']['order_id'] ?? null;
-                    $status = strtoupper((string) ($fetched['data']['status'] ?? ''));
+                    $status     = $status ?: strtoupper((string) ($fetched['data']['status'] ?? ''));
+                    $externalId = $fetched['data']['external_id'] ?? null;
+                    // order_id del pago: solo lo usamos si es numérico (= nuestra Order).
+                    $fetchedOrderId = $fetched['data']['order_id'] ?? null;
+                    if (!$orderId || !is_numeric($orderId)) {
+                        $orderId = is_numeric($fetchedOrderId) ? $fetchedOrderId : null;
+                    }
                 }
             }
+
+            // Resolver nuestra Order: por payment_id, por order_id numérico, o por
+            // external_id (suscripciones). external_id contiene nuestro order_id.
+            $resolvedOrderId = is_numeric($orderId) ? $orderId : (is_numeric($externalId) ? $externalId : null);
 
             $responseDLocal = null;
             if ($paymentId) {
                 $responseDLocal = ResponseDLocal::where('payment_id', $paymentId)->first();
             }
-            if (!$responseDLocal && $orderId) {
-                $responseDLocal = ResponseDLocal::where('order_id', $orderId)->first();
+            if (!$responseDLocal && $resolvedOrderId) {
+                $responseDLocal = ResponseDLocal::where('order_id', $resolvedOrderId)->first();
             }
+            $orderId = $resolvedOrderId;
 
             if ($responseDLocal) {
                 $responseDLocal->status = $status;
@@ -93,6 +107,9 @@ class WebhookDLocal extends Controller
             }
 
             if ($status === DLocalGo::STATUS_PAID && $orderId) {
+                // Suscripción: marcamos la orden como pagada con la PRIMERA cuota
+                // (el alumno ya empezó a pagar). Las renovaciones siguientes llegan
+                // como webhooks adicionales y fulfillOrder() es idempotente.
                 $this->fulfillOrder((int) $orderId, $responseDLocal);
             }
 
