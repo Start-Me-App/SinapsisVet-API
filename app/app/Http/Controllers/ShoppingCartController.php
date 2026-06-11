@@ -183,11 +183,9 @@ class ShoppingCartController extends Controller
         }
 
         $paymentMethodId = $request->input('paymentMethodId');
-        $installments    = (int) $request->input('installments', 1);
-        $paymentType     = $request->input('payment_type');     // CREDIT_CARD | BANK_TRANSFER,DEBIT_CARD | null
+        $installments    = (int) $request->input('installments', 1); // crédito: 1/3/6/12; débito/transf: 1
+        $paymentType     = $request->input('payment_type');     // CREDIT_CARD | DEBIT_CARD | BANK_TRANSFER
         $feeRate         = (float) $request->input('fee_rate', 0); // ej: -0.05, 0, 0.05, 0.10, 0.20
-        // Modalidad dLocal: PAYMENT (1 pago o cuotas con tarjeta) | SUBSCRIPTION (cuotas sin interés por transf/débito)
-        $dlocalMode      = strtoupper((string) $request->input('dlocal_mode', 'PAYMENT'));
        
        foreach ($shoppingCart->items as $item) {
 
@@ -389,18 +387,13 @@ class ShoppingCartController extends Controller
             $preference = null;
             $client_secret = null;
             $checkoutDLocal = new CheckoutDLocal();
-            if($dlocalMode == 'SUBSCRIPTION' && $installments > 1){
-                # Cuotas sin interés (transferencia/débito) -> suscripción mensual de monto÷N
-                $redirect_url = $checkoutDLocal->processSubscription(
-                    floatval($total), $user->id, $order->id, $installments, 'ARS', 'AR'
-                );
-            }else{
-                # 1 pago, o cuotas con tarjeta de crédito -> POST /v1/payments
-                $redirect_url = $checkoutDLocal->processPayment(
-                    floatval($total), $user->id, $order->id, 'ARS', 'AR',
-                    $installments, $paymentType, $feeRate
-                );
-            }
+            # Checkout: débito/transferencia -> 1 pago; crédito -> 1/3/6/12 pagos.
+            # (La suscripción para cuotas sin interés se usará luego en la orden manual,
+            #  no desde el carrito.)
+            $redirect_url = $checkoutDLocal->processPayment(
+                floatval($total), $user->id, $order->id, 'ARS', 'AR',
+                $installments, $paymentType, $feeRate
+            );
             if(!$redirect_url){
                 OrderDetail::where('order_id', $order->id)->delete();
                 $order->delete();

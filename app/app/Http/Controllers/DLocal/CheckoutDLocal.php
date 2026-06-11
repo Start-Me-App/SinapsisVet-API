@@ -116,6 +116,10 @@ class CheckoutDLocal extends Controller
     /**
      * Inicia una suscripción para "cuotas sin interés" por transferencia/débito.
      *
+     * NOTA DE ALCANCE: este método NO se usa desde el checkout del carrito.
+     * Queda reservado para el flujo de "creación de orden manual" (administrativo),
+     * que se implementará más adelante. El carrito solo usa processPayment().
+     *
      * Débito/transferencia NO soportan cuotas (installments) en dLocal: se modela
      * como un plan recurrente MENSUAL de monto÷N con max_periods = N, de modo que
      * dLocal corta los cobros solo al alcanzar las N cuotas. Devuelve el
