@@ -37,7 +37,8 @@ class CheckoutDLocal extends Controller
     public function processPayment(
         $total, $userId, $orderId,
         string $currency = 'ARS', string $country = 'AR',
-        int $installments = 1, ?string $paymentType = null, float $feeRate = 0
+        int $installments = 1, ?string $paymentType = null, float $feeRate = 0,
+        ?int $expirationDays = null
     ) {
         try {
             $user = User::find($userId);
@@ -81,6 +82,13 @@ class CheckoutDLocal extends Controller
             // POST /v1/payments con max_installments=3 devuelve 200 + redirect_url.
             if ($installments > 1) {
                 $payload['max_installments'] = $installments;
+            }
+
+            // Expiración custom del link (para links manuales compartidos con el cliente).
+            // Por defecto dLocal expira el link a las 24h; con esto lo extendemos.
+            if ($expirationDays !== null && $expirationDays > 0) {
+                $payload['expiration_type'] = 'DAYS';
+                $payload['expiration_value'] = $expirationDays;
             }
 
             $result = $dlocal->createPayment($payload);

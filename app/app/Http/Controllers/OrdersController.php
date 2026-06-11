@@ -7,7 +7,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Order,OrderDetail,Inscriptions,Installments,InstallmentDetail,Discounts,Movements,Courses};
+use App\Models\{Order,OrderDetail,Inscriptions,Installments,InstallmentDetail,Discounts,Movements,Courses,ResponseDLocal};
+use App\Http\Controllers\DLocal\CheckoutDLocal;
 
 use App\Helper\TelegramNotification;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +22,12 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use App\Support\TokenManager;
 
 class OrdersController extends Controller
-{   
+{
 
-  
+    /** Días de expiración del link de pago dLocal compartido manualmente con el cliente. */
+    const DLOCAL_LINK_EXPIRATION_DAYS = 3;
+
+
     /**
      * Listado de ordenes
      *
@@ -43,7 +47,19 @@ class OrdersController extends Controller
     public function getOrderDetails($order_id)
     {
         $order = OrderDetail::with('course.workshops','order')->where('order_id', $order_id)->get();
-        return response()->json(['data' => $order], 200);
+
+        // Si la orden se pagó con dLocal, adjuntar el link guardado (redirect_url /
+        // subscribe_url) y su estado, para que el admin pueda reenviárselo al cliente.
+        $dlocal = ResponseDLocal::where('order_id', $order_id)->orderBy('id', 'desc')->first();
+        $dlocalData = $dlocal ? [
+            'link'            => $dlocal->redirect_url,
+            'status'          => $dlocal->status,
+            'payment_id'      => $dlocal->payment_id,
+            'subscription_id' => $dlocal->subscription_id,
+            'currency'        => $dlocal->currency,
+        ] : null;
+
+        return response()->json(['data' => $order, 'dlocal' => $dlocalData], 200);
     }
 
     public function acceptOrder(Request $request,$order_id)
@@ -434,6 +450,13 @@ class OrdersController extends Controller
 
         $request_data = $request->all();
 
+        # dLocal (payment_method_id = 6): la orden NO se registra como pagada acá.
+        # Se crea en 'pending' y se genera un link de dLocal que el admin le pasa al
+        # cliente. La orden pasa a 'paid' por el webhook (WebhookDLocal) cuando paga.
+        if(isset($request_data['payment_method_id']) && $request_data['payment_method_id'] == 6){
+            return $this->createDLocalManualOrder($request_data);
+        }
+
         if(!isset($request_data['account_id']) && $request_data['installments'] == 0){
             return response()->json(['error' => 'Se necesita una cuenta para registrar el pago'], 500);
         }
@@ -564,6 +587,109 @@ class OrdersController extends Controller
 
 
         return response()->json(['data' => $order], 200);
+    }
+
+
+    /**
+     * Rama dLocal de createOrder() (payment_method_id = 6). NO es un endpoint:
+     * se invoca desde createOrder. Crea la orden en 'pending' y genera el link de
+     * dLocal (que queda guardado en ResponseDLocal vía CheckoutDLocal). La orden
+     * pasa a 'paid' por el webhook cuando el cliente paga.
+     *
+     * Modalidades (las elige el admin):
+     *   - mode = 'PAYMENT'      -> link de pago. payment_type (CREDIT_CARD/DEBIT_CARD/
+     *                              BANK_TRANSFER), installments (1/3/6/12 solo crédito),
+     *                              fee_rate (recargo/descuento). Link expira en 3 días.
+     *   - mode = 'SUBSCRIPTION'  -> suscripción de 3 o 6 cuotas SIN interés (total÷N).
+     *
+     * Devuelve la orden y el link (redirect_url o subscribe_url) para pasárselo al
+     * cliente. Para levantarlo luego, leer ResponseDLocal de la orden.
+     */
+    private function createDLocalManualOrder(array $data)
+    {
+        try {
+            $userId       = $data['user_id'];
+            $items        = $data['items'] ?? [];
+            $mode         = strtoupper($data['mode'] ?? 'PAYMENT');
+            $paymentType  = $data['payment_type'] ?? null;
+            $installments = (int) ($data['installments'] ?? 1);
+            $feeRate      = (float) ($data['fee_rate'] ?? 0);
+            $currency     = $data['currency'] ?? 'ARS';
+            $country      = $data['country'] ?? 'AR';
+
+            if (empty($items)) {
+                return response()->json(['error' => 'La orden no tiene items'], 422);
+            }
+            if ($mode === 'SUBSCRIPTION' && !in_array($installments, [3, 6], true)) {
+                return response()->json(['error' => 'La suscripción solo admite 3 o 6 cuotas'], 422);
+            }
+
+            $order = new Order();
+            $order->user_id = $userId;
+            $order->status = 'pending';
+            $order->date_created = date('Y-m-d H:i:s');
+            $order->date_last_updated = date('Y-m-d H:i:s');
+            $order->payment_method_id = 6; // dLocal
+            $order->shopping_cart_id = null;
+            $order->save();
+
+            $total = 0;
+            foreach ($items as $item) {
+                $price = $item['unit_price'];
+                if (($item['with_workshop'] ?? 0) == 1) {
+                    $price += env('WORKSHOP_PRICE_ARS');
+                }
+                $orderDetail = new OrderDetail();
+                $orderDetail->order_id = $order->id;
+                $orderDetail->course_id = $item['course_id'];
+                $orderDetail->price = $price;
+                $orderDetail->with_workshop = $item['with_workshop'] ?? 0;
+                $orderDetail->quantity = 1;
+                $orderDetail->save();
+                $total += $price;
+            }
+
+            // Recargo/descuento (PAYMENT). En SUBSCRIPTION es total÷N sin interés.
+            if ($mode === 'PAYMENT' && $feeRate != 0) {
+                $total = round($total * (1 + $feeRate));
+            }
+
+            $order->total_amount_ars = $total;
+            $order->total_amount_usd = null;
+            $order->installments = ($mode === 'SUBSCRIPTION' || $installments > 1) ? $installments : null;
+            $order->save();
+
+            $checkout = new CheckoutDLocal();
+
+            if ($mode === 'SUBSCRIPTION') {
+                $link = $checkout->processSubscription(
+                    floatval($total), $userId, $order->id, $installments, $currency, $country
+                );
+            } else {
+                $link = $checkout->processPayment(
+                    floatval($total), $userId, $order->id, $currency, $country,
+                    $installments, $paymentType, $feeRate, self::DLOCAL_LINK_EXPIRATION_DAYS
+                );
+            }
+
+            if (!$link) {
+                OrderDetail::where('order_id', $order->id)->delete();
+                $order->delete();
+                return response()->json(['error' => 'No se pudo generar el link de dLocal'], 500);
+            }
+
+            return response()->json([
+                'data' => [
+                    'order' => $order,
+                    'mode' => $mode,
+                    'link' => $link,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram('Error createDLocalManualOrder: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
 
