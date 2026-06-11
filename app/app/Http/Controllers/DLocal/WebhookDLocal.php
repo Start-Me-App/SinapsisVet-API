@@ -35,27 +35,28 @@ class WebhookDLocal extends Controller
     public function notification(Request $request)
     {
         try {
-            $payload = $request->all();
+            // Raw body EXACTO: la firma HMAC se calcula sobre el cuerpo sin re-serializar.
+            $rawBody = $request->getContent();
+            $authHeader = $request->header('Authorization');
+            $payload = json_decode($rawBody, true) ?: [];
             Log::info('Webhook dLocal Go recibido', $payload);
 
-            // TODO (sandbox): confirmar el header de firma real para validar HMAC.
-            $signature = $request->header('X-Signature') ?? $request->header('Signature');
-
-            if (!DLocalGo::validateWebhook($payload, $signature)) {
+            // Validación HMAC-SHA256: HMAC(secret, api_key + raw_body) vs header Signature.
+            if (!DLocalGo::validateWebhook($rawBody, $authHeader)) {
                 return response()->json(['error' => 'Webhook inválido'], 400);
             }
 
-            // TODO (sandbox): confirmar las claves reales del payload.
-            $paymentId = $payload['payment_id'] ?? ($payload['id'] ?? null);
-            $orderId = $payload['order_id'] ?? null;
-            $status = strtoupper((string) ($payload['status'] ?? ''));
+            // dLocal Go notifica solo { "payment_id": "DP-..." }. Hay que hacer retrieve
+            // para obtener order_id y status reales.
+            $paymentId = $payload['payment_id'] ?? null;
+            $orderId = null;
+            $status = '';
 
-            // Si dLocal Go sólo manda el id del pago, consultamos el estado real.
-            if ($paymentId && (!$orderId || !$status)) {
+            if ($paymentId) {
                 $fetched = DLocalGo::getInstance()->getPayment((string) $paymentId);
                 if ($fetched['success'] && !empty($fetched['data'])) {
-                    $orderId = $orderId ?: ($fetched['data']['order_id'] ?? null);
-                    $status = $status ?: strtoupper((string) ($fetched['data']['status'] ?? ''));
+                    $orderId = $fetched['data']['order_id'] ?? null;
+                    $status = strtoupper((string) ($fetched['data']['status'] ?? ''));
                 }
             }
 

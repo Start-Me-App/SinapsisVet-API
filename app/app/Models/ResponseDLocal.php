@@ -33,6 +33,10 @@ class ResponseDLocal extends Model
         'redirect_url',     // URL de checkout a la que se redirige al usuario
         'subscription_id',  // id de la suscripción (cuotas sin interés)
         'currency',         // moneda cobrada (ARS, USD, u otra local)
+        'fee_usd',          // comisión dLocal (balance_fee) en USD
+        'net_amount_usd',   // neto acreditado (balance_amount) en USD
+        'net_amount_ars',   // neto convertido a ARS
+        'exchange_rate',    // cotización USD→ARS usada
         'approved_at',
         'error_message',
     ];

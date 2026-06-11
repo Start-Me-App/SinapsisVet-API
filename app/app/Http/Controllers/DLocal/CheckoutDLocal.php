@@ -29,9 +29,9 @@ class CheckoutDLocal extends Controller
      * @param int         $orderId
      * @param string      $currency     Moneda local (ARS por defecto).
      * @param string      $country      Código de país ISO (AR por defecto).
-     * @param int         $installments Cantidad de cuotas (1 = pago único).
-     * @param string|null $paymentType  CREDIT_CARD | BANK_TRANSFER,DEBIT_CARD | null
-     * @param float       $feeRate      Factor aplicado al total (-0.05, 0, 0.05, etc.)
+     * @param int         $installments Cantidad de cuotas con tarjeta (1 = pago único). Solo aplica a CREDIT_CARD.
+     * @param string|null $paymentType  dLocal Go payment_type: CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, VOUCHER (coma-separados). null = todos los métodos.
+     * @param float       $feeRate      Factor de interés/descuento ya aplicado al total (-0.05, 0.05, 0.10, 0.20, ...). Informativo.
      * @return string|null redirect_url del checkout, o null si falló.
      */
     public function processPayment(
@@ -64,11 +64,23 @@ class CheckoutDLocal extends Controller
                 ],
             ];
 
-            if ($installments > 1) {
-                $payload['max_installments'] = $installments;
-            }
+            // Restringir los métodos de pago del checkout (campo real de dLocal Go).
+            // CREDIT_CARD | DEBIT_CARD | BANK_TRANSFER | VOUCHER (coma-separados).
+            // Si es null, dLocal muestra todos los métodos habilitados.
             if ($paymentType) {
                 $payload['payment_type'] = $paymentType;
+            }
+
+            // Cuotas: SOLO aplican a CREDIT_CARD (débito/transferencia no soportan cuotas).
+            // El recargo (+5/10/20%) ya viene incluido en $total.
+            //
+            // NOTA: NO enviar 'installments_fee_responsible' salvo que la cuenta tenga
+            // habilitado el override de cuotas; de lo contrario dLocal responde
+            // 400 {"code":5000,"message":"Merchant cannot modify installments payer
+            // configuration"}. Validado en sandbox (merchant 4383): sin ese campo,
+            // POST /v1/payments con max_installments=3 devuelve 200 + redirect_url.
+            if ($installments > 1) {
+                $payload['max_installments'] = $installments;
             }
 
             $result = $dlocal->createPayment($payload);
@@ -79,9 +91,9 @@ class CheckoutDLocal extends Controller
 
             $data = $result['data'];
 
-            // TODO (sandbox): confirmar las claves reales de la respuesta.
-            $paymentId = $data['id'] ?? ($data['payment_id'] ?? null);
-            $redirectUrl = $data['redirect_url'] ?? ($data['checkout_url'] ?? null);
+            // Respuesta de POST /v1/payments: id (ej. "DP-54354") y redirect_url.
+            $paymentId = $data['id'] ?? null;
+            $redirectUrl = $data['redirect_url'] ?? null;
 
             $responseDLocal = new ResponseDLocal();
             $responseDLocal->user_id = $userId;
@@ -97,6 +109,79 @@ class CheckoutDLocal extends Controller
             Log::error('Error iniciando pago dLocal Go: ' . $e->getMessage());
             $telegram = new TelegramNotification();
             $telegram->toTelegram('Error dLocal Go: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Inicia una suscripción para "cuotas sin interés" por transferencia/débito.
+     *
+     * Débito/transferencia NO soportan cuotas (installments) en dLocal: se modela
+     * como un plan recurrente MENSUAL de monto÷N con max_periods = N, de modo que
+     * dLocal corta los cobros solo al alcanzar las N cuotas. Devuelve el
+     * subscribe_url (redirect) que el frontend abre para que el cliente se suscriba.
+     *
+     * @param float  $total        Monto total de la orden (base, sin interés).
+     * @param int    $userId
+     * @param int    $orderId
+     * @param int    $installments Cantidad de cuotas (3 o 6).
+     * @param string $currency
+     * @param string $country
+     * @return string|null subscribe_url, o null si falló.
+     */
+    public function processSubscription(
+        $total, $userId, $orderId, int $installments,
+        string $currency = 'ARS', string $country = 'AR'
+    ) {
+        try {
+            $dlocal = DLocalGo::getInstance();
+
+            // monto por cuota = total / N (sin interés)
+            $amountPerInstallment = round(floatval($total) / $installments, 2);
+
+            $baseUrl = rtrim(env('URL_WEB', env('FRONT_URL')), '/');
+
+            $payload = [
+                'name'             => 'Orden ' . $orderId . ' - ' . $installments . ' cuotas sin interés',
+                'description'      => 'SinapsisVet - Orden #' . $orderId . ' en ' . $installments . ' cuotas',
+                'country'          => $country,
+                'currency'         => $currency,
+                'amount'           => $amountPerInstallment,
+                'frequency_type'   => 'MONTHLY',
+                'frequency_value'  => 1,
+                'max_periods'      => $installments, // dLocal corta solo al llegar a N cobros
+                'notification_url' => DLocalGo::getWebhookUrl(),
+                'success_url'      => $baseUrl . '/checkout?status=approved&payment_method=dlocal&order_id=' . $orderId . '&installments=' . $installments,
+                'back_url'         => $baseUrl . '/checkout?status=cancelled&payment_method=dlocal&order_id=' . $orderId,
+                'error_url'        => $baseUrl . '/checkout?status=error&payment_method=dlocal&order_id=' . $orderId,
+            ];
+
+            $result = $dlocal->createSubscriptionPlan($payload);
+
+            if (!$result['success'] || empty($result['data'])) {
+                throw new \Exception($result['message'] ?? 'Error creando el plan de suscripción en dLocal Go');
+            }
+
+            $data = $result['data'];
+
+            // Respuesta de POST /v1/subscription/plan: id (numérico) y subscribe_url.
+            $planId = isset($data['id']) ? (string) $data['id'] : null;
+            $subscribeUrl = $data['subscribe_url'] ?? null;
+
+            $responseDLocal = new ResponseDLocal();
+            $responseDLocal->user_id = $userId;
+            $responseDLocal->order_id = $orderId;
+            $responseDLocal->subscription_id = $planId; // guardamos el plan; la suscripción concreta llega por webhook
+            $responseDLocal->redirect_url = $subscribeUrl;
+            $responseDLocal->currency = $currency;
+            $responseDLocal->status = 'pending';
+            $responseDLocal->save();
+
+            return $subscribeUrl;
+        } catch (\Exception $e) {
+            Log::error('Error iniciando suscripción dLocal Go: ' . $e->getMessage());
+            $telegram = new TelegramNotification();
+            $telegram->toTelegram('Error suscripción dLocal Go: ' . $e->getMessage());
             return null;
         }
     }
