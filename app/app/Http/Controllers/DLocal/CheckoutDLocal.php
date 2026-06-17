@@ -170,7 +170,6 @@ class CheckoutDLocal extends Controller
                 'frequency_type'   => 'MONTHLY',
                 'frequency_value'  => 1,
                 'max_periods'      => $installments, // dLocal corta solo al llegar a N cobros
-                'external_id'      => (string) $orderId, // para mapear los cobros de la suscripción a nuestra orden
                 'notification_url' => DLocalGo::getWebhookUrl(),
                 'success_url'      => $baseUrl . '/checkout?status=approved&payment_method=dlocal&order_id=' . $orderId . '&installments=' . $installments,
                 'back_url'         => $baseUrl . '/checkout?status=cancelled&payment_method=dlocal&order_id=' . $orderId,
@@ -188,6 +187,14 @@ class CheckoutDLocal extends Controller
             // Respuesta de POST /v1/subscription/plan: id (numérico) y subscribe_url.
             $planId = isset($data['id']) ? (string) $data['id'] : null;
             $subscribeUrl = $data['subscribe_url'] ?? null;
+
+            // external_id NO es un campo del plan: se adjunta como query param en el
+            // subscribe_url para que dLocal lo devuelva en cada cobro (ejecución) y
+            // así poder vincular el webhook de la suscripción con nuestra Order.
+            if ($subscribeUrl) {
+                $sep = (strpos($subscribeUrl, '?') !== false) ? '&' : '?';
+                $subscribeUrl .= $sep . 'external_id=' . urlencode((string) $orderId);
+            }
 
             $responseDLocal = new ResponseDLocal();
             $responseDLocal->user_id = $userId;

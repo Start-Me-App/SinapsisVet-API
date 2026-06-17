@@ -82,6 +82,18 @@ class WebhookDLocal extends Controller
             }
             $orderId = $resolvedOrderId;
 
+            // Diagnóstico: dejar rastro de cómo se resolvió cada webhook. Clave para
+            // depurar cobros de suscripción (donde order_id viene como "ST-..." y el
+            // nuestro llega por external_id). Revisar en storage/logs ante un fallo.
+            Log::info('Webhook dLocal Go resuelto', [
+                'payment_id'       => $paymentId,
+                'order_id_raw'     => $payload['order_id'] ?? null,
+                'external_id'      => $externalId,
+                'resolved_order'   => $resolvedOrderId,
+                'status'           => $status,
+                'response_dlocal'  => $responseDLocal ? $responseDLocal->id : null,
+            ]);
+
             if ($responseDLocal) {
                 $responseDLocal->status = $status;
                 if ($status === DLocalGo::STATUS_PAID) {
